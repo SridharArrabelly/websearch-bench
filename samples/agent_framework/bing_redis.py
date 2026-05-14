@@ -5,10 +5,10 @@ URLs returned by the web search tool. Answers are cached in Redis to avoid
 repeated (and expensive) Bing-grounded calls for the same question.
 
 Usage:
-    python af-websearchtool-bing.py
-    python af-websearchtool-bing.py "What is the medical tax credit for 2025?"
-    python af-websearchtool-bing.py --no-cache "..."   # bypass + refresh cache
-    python af-websearchtool-bing.py --clear-cache      # wipe app keys and exit
+    python bing_redis.py
+    python bing_redis.py "What is the medical tax credit for 2025?"
+    python bing_redis.py --no-cache "..."   # bypass + refresh cache
+    python bing_redis.py --clear-cache      # wipe app keys and exit
 
 Required environment variables (loaded from .env):
     PROJECT_ENDPOINT  Azure AI Foundry project endpoint.
@@ -293,3 +293,4 @@ if __name__ == "__main__":
     configure_azure_monitor()
     enable_instrumentation(enable_sensitive_data=True)
     asyncio.run(main())
+
