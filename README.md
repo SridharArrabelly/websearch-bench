@@ -1,42 +1,64 @@
-# web-search-tool
+# foundry-websearch-tool
 
-Sample scripts demonstrating web-search grounding for LLM agents using:
+A small Python package — **`websearch_bench`** — that runs the *same* grounded
+web-search question through every popular SDK surface and prints a side-by-side
+table of **tokens, latency, and estimated cost** so you can pick the cheapest
+backend for your workload with eyes open.
 
-- **Azure AI Foundry** agents with the built-in `WebSearchTool` (Bing Web Search and Bing Custom Search)
-- **Microsoft Agent Framework** agents wrapping the same Foundry tools (with optional Redis caching)
-- **OpenAI Responses API** with the native `web_search` tool (and `allowed_domains` filtering)
+## Why this exists
 
-The samples are oriented around grounding answers in South African Revenue Service (SARS) content (`www.sars.gov.za`), but can be retargeted to any site or Bing Custom Search instance.
+Web-search grounding is available three different ways for the same Azure / OpenAI
+ecosystem, and each one bills differently:
+
+| Backend | Library | Tool plumbing | Per-call charge (besides model tokens) |
+| --- | --- | --- | --- |
+| `foundry-bing` | `azure-ai-projects` | `WebSearchTool` on a Foundry `PromptAgentDefinition` (Bing Web Search) | Grounding with Bing Search |
+| `foundry-bing-custom` | `azure-ai-projects` | `WebSearchTool` + `WebSearchConfiguration` (Bing Custom Search) | Grounding with Bing Custom Search |
+| `agentfx-bing` | `agent-framework-foundry` | `FoundryChatClient.get_web_search_tool(...)` wired into an `Agent` | Grounding with Bing Search |
+| `agentfx-bing-cached` | `agent-framework-foundry` + Redis | Same as above, with Redis answer cache | 0 on cache hit; otherwise as above |
+| `openai-web-search` | `openai` | Responses API native `web_search` tool (`allowed_domains`) | OpenAI `web_search` per call |
+
+The whole point is that **every backend hits the same model with the same query,
+same `search_context_size`, same domain filter, and same instructions** — so the
+numbers are comparable. All shared workload lives in
+[`src/websearch_bench/shared.py`](src/websearch_bench/shared.py).
 
 ## Repository layout
 
 ```
-web-search-tool/
+foundry-websearch-tool/
 ├── README.md
 ├── pyproject.toml
 ├── uv.lock
 ├── .env.example
 ├── .gitignore
-└── samples/
-    ├── agent_framework/
-    │   ├── bing.py            # Agent Framework + Foundry WebSearchTool (Bing)
-    │   └── bing_redis.py      # Same, with Redis response caching
-    ├── foundry_sdk/
-    │   ├── bing.py            # Foundry agent using Bing Web Search grounding
-    │   └── bing_custom.py     # Foundry agent using Bing Custom Search grounding
-    └── openai/
-        └── responses_web_search.py  # OpenAI Responses API + web_search tool
+└── src/
+    └── websearch_bench/
+        ├── __init__.py
+        ├── __main__.py                  # python -m websearch_bench  → compare
+        ├── shared.py                    # query, model, instructions, RunMetrics
+        ├── pricing.py                   # USD constants + estimate_cost()
+        ├── compare.py                   # harness — runs all backends, writes results.csv
+        └── backends/
+            ├── __init__.py              # registry of backends
+            ├── foundry_bing.py
+            ├── foundry_bing_custom.py
+            ├── agentfx_bing.py
+            ├── agentfx_bing_cached.py
+            └── openai_web_search.py
 ```
 
-| Path | Description |
-| --- | --- |
-| [samples/agent_framework/bing.py](samples/agent_framework/bing.py) | Agent Framework agent backed by the Foundry `WebSearchTool` (Bing Web Search). |
-| [samples/agent_framework/bing_redis.py](samples/agent_framework/bing_redis.py) | Same as above, with Redis-based response caching. |
-| [samples/foundry_sdk/bing.py](samples/foundry_sdk/bing.py) | Foundry agent using Bing Web Search grounding. |
-| [samples/foundry_sdk/bing_custom.py](samples/foundry_sdk/bing_custom.py) | Foundry agent using Bing Custom Search grounding (ARM connection ID). |
-| [samples/openai/responses_web_search.py](samples/openai/responses_web_search.py) | Calls OpenAI Responses API directly with the `web_search` tool, restricted via `allowed_domains`. Prints token usage. |
-| [pyproject.toml](pyproject.toml) | Project dependencies (managed with [uv](https://docs.astral.sh/uv/)). |
-| [.env.example](.env.example) | Template for local configuration; copy to `.env` (gitignored). |
+Each backend module exposes the same contract:
+
+```python
+BACKEND_NAME: str
+REQUIRED_ENV: tuple[str, ...]
+async def run() -> RunMetrics
+def main() -> None      # standalone entry point
+```
+
+Adding a new backend = one file in `backends/` + one line in
+`backends/__init__.py`.
 
 ## Prerequisites
 
@@ -44,102 +66,123 @@ web-search-tool/
 - **[uv](https://docs.astral.sh/uv/getting-started/installation/)** package manager
 - **Azure CLI** (`az`) for local credential sign-in
 - An **Azure AI Foundry** project with:
-  - A deployed chat model (e.g. `gpt-5.1`)
-  - A **Grounding with Bing Search** connection, and/or a **Grounding with Bing Custom Search** connection + instance
-- An **OpenAI API key** (only for [samples/openai/responses_web_search.py](samples/openai/responses_web_search.py))
-- (Optional) A reachable **Redis** instance for the cached Agent Framework sample
+  - A deployed chat model (e.g. `gpt-5.1`) — used as `MODEL`
+  - A **Grounding with Bing Search** connection (for `foundry-bing`, `agentfx-bing`, `agentfx-bing-cached`)
+  - A **Grounding with Bing Custom Search** connection + instance (for `foundry-bing-custom`)
+- An **OpenAI API key** (only for `openai-web-search`)
+- (Optional) A reachable **Redis** instance for `agentfx-bing-cached`
+- (Optional) An **Application Insights** connection string for tracing in `agentfx-bing-cached`
 
 ## Setup
 
-### 1. Clone and enter the repo
-
 ```powershell
-git clone <repo-url>
-cd web-search-tool
-```
-
-### 2. Install dependencies with uv
-
-```powershell
-uv sync
-```
-
-This creates a `.venv/` and installs everything from `pyproject.toml` / `uv.lock`. The project pins pre-release Agent Framework packages, which are allowed via `[tool.uv] prerelease = "allow"` in [pyproject.toml](pyproject.toml).
-
-Activate the environment (optional — `uv run` works without it):
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-> If activation is blocked: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned`.
-
-### 3. Sign in to Azure
-
-The Foundry samples use `DefaultAzureCredential`, so any of the standard Azure credential sources work. The simplest is:
-
-```powershell
+cd C:\path\to\foundry-websearch-tool
+uv sync                                  # creates .venv, installs the package + deps
+Copy-Item .env.example .env              # then edit .env (see "Environment" below)
 az login
 az account set --subscription <your-subscription-id>
 ```
 
-Your signed-in identity needs the **Azure AI User** role (or equivalent) on the Foundry project.
+Your signed-in identity needs the **Azure AI User** role (or equivalent) on the
+Foundry project.
 
-### 4. Configure `.env`
+## Environment
 
-Copy the template and fill in your values:
+Minimum env vars per backend (set in `.env`):
 
-```powershell
-Copy-Item .env.example .env
-```
+| Backend | Required env vars |
+| --- | --- |
+| `foundry-bing` | `PROJECT_ENDPOINT`, `MODEL` |
+| `foundry-bing-custom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
+| `agentfx-bing` | `PROJECT_ENDPOINT`, `MODEL` |
+| `agentfx-bing-cached` | above + `REDIS_URL` (and a running Redis) |
+| `openai-web-search` | `OPENAI_API_KEY`, optional `OPENAI_MODEL` |
 
-The connection ID and instance name come from your Foundry project''s **Connected resources → Grounding with Bing Custom Search** entry.
+Optional everywhere:
 
-## Run the samples
+- `APPLICATIONINSIGHTS_CONNECTION_STRING` — tracing for the cached backend.
+- `BING_GROUNDING_USD_PER_CALL`, `BING_CUSTOM_USD_PER_CALL`,
+  `OPENAI_WEB_SEARCH_USD_PER_CALL` — override the placeholder pricing.
 
-Use `uv run` (no activation needed) or `python` inside the activated venv.
+## Run
 
-### OpenAI Responses API + web search (token-usage demo)
-
-```powershell
-uv run python samples/openai/responses_web_search.py
-```
-
-Restricts results to `www.sars.gov.za` via `tools[0].filters.allowed_domains` and prints input / output / total token counts. To target a different site, edit the `allowed_domains` list (up to 20 domains).
-
-### Foundry agent — Bing Web Search
-
-```powershell
-uv run python samples/foundry_sdk/bing.py
-```
-
-### Foundry agent — Bing Custom Search
+### Side-by-side comparison (the main artifact)
 
 ```powershell
-uv run python samples/foundry_sdk/bing_custom.py
+uv run websearch-bench
+# or
+uv run python -m websearch_bench
 ```
 
-### Agent Framework + Foundry web search
+This runs every backend whose env vars are present, prints a `rich` table, and
+writes `results.csv` in the current working directory. Backends with missing
+env vars are **skipped with a warning** — they don't fail the run.
+
+### A single backend in isolation
 
 ```powershell
-uv run python samples/agent_framework/bing.py
+uv run python -m websearch_bench.backends.foundry_bing
+uv run python -m websearch_bench.backends.foundry_bing_custom
+uv run python -m websearch_bench.backends.agentfx_bing
+uv run python -m websearch_bench.backends.agentfx_bing_cached
+uv run python -m websearch_bench.backends.openai_web_search
 ```
 
-### Agent Framework with Redis caching
+Each prints the agent's answer plus a normalized usage block (tokens, search
+calls when surfaced, latency, estimated USD cost).
 
-Start Redis (e.g. via Docker) then:
+### Cache-only backend: extras
 
 ```powershell
-uv run python samples/agent_framework/bing_redis.py
+# Ask a different question (cache key is per-query)
+uv run python -m websearch_bench.backends.agentfx_bing_cached "What is the medical tax credit for 2025?"
+
+# Bypass cache and refresh
+uv run python -m websearch_bench.backends.agentfx_bing_cached --no-cache "..."
+
+# Wipe all cache keys
+uv run python -m websearch_bench.backends.agentfx_bing_cached --clear-cache
 ```
+
+Start a local Redis if you don't already have one:
+
+```powershell
+docker run --rm -p 6379:6379 redis:7
+```
+
+## Change the workload
+
+Every backend reads its workload from `src/websearch_bench/shared.py`. To
+benchmark a different query / model / domain / `search_context_size`, edit
+those module-level constants once and rerun `websearch-bench`.
+
+## Pricing
+
+`src/websearch_bench/pricing.py` ships with **illustrative defaults only**. Verify
+against the official pages before quoting:
+
+- Azure OpenAI / Foundry model pricing: <https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/>
+- Grounding with Bing Search: <https://www.microsoft.com/bing/apis/grounding-pricing>
+- Grounding with Bing Custom Search: <https://www.microsoft.com/bing/apis/pricing>
+- OpenAI Responses API + `web_search`: <https://openai.com/api/pricing/>
+
+Override per-call charges via env vars (see `.env.example`).
 
 ## Troubleshooting
 
-- **`DefaultAzureCredential` failures** — run `az login` again and confirm `az account show` returns the expected subscription.
-- **`PermissionDenied` on the Foundry project** — your identity needs the *Azure AI User* role on the project resource.
-- **Bing Custom Search returns empty results** — verify `BING_CUSTOM_SEARCH_INSTANCE_NAME` matches an instance defined in the Bing Custom Search portal, and that the instance includes the domains you expect.
-- **`web_search` tool errors from OpenAI** — ensure your account has access to the Responses API web-search tool and the model you specify supports it.
+- **`DefaultAzureCredential` failures** — `az login` again; confirm
+  `az account show` returns the expected subscription.
+- **`PermissionDenied` on the Foundry project** — your identity needs the
+  *Azure AI User* role on the project resource.
+- **Bing Custom Search returns empty results** — verify
+  `BING_CUSTOM_SEARCH_INSTANCE_NAME` matches an instance in the Bing Custom
+  Search portal and that the instance includes the expected domains.
+- **`web_search` errors from OpenAI** — your account must have access to the
+  Responses API web-search tool and a model that supports it.
+- **`agent_framework` import errors after `uv sync`** — this repo opts in to
+  pre-release packages via `[tool.uv] prerelease = "allow"`; re-run `uv sync`.
 
-## Security notes
+## Security
 
-Never commit `.env`, API keys, or connection strings. The `.gitignore` excludes `.env` and `.venv/` by default — keep it that way and rotate any key that has been pasted into a chat or shared screen.
+Never commit `.env`, API keys, or connection strings. Rotate any key that has
+been pasted into a chat or shared screen.

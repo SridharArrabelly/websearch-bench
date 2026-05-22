@@ -1,0 +1,96 @@
+"""OpenAI Responses API + native ``web_search`` tool benchmark backend."""
+
+from __future__ import annotations
+
+import asyncio
+import os
+
+from dotenv import load_dotenv
+from openai import AsyncOpenAI
+from rich.console import Console
+
+from websearch_bench.pricing import estimate_cost
+from websearch_bench.shared import (
+    ALLOWED_DOMAINS,
+    OPENAI_MODEL,
+    SHARED_INSTRUCTIONS,
+    SHARED_QUERY,
+    RunMetrics,
+    Timer,
+    count_search_calls_in_openai_output,
+    print_metrics,
+    usage_from_openai_response,
+)
+
+BACKEND_NAME = "openai-web-search"
+REQUIRED_ENV: tuple[str, ...] = ("OPENAI_API_KEY",)
+
+console = Console()
+
+
+async def run() -> RunMetrics:
+    load_dotenv(override=True)
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise SystemExit("OPENAI_API_KEY is not set. Add it to .env or your environment.")
+
+    client = AsyncOpenAI(api_key=api_key)
+    console.print(f"[bold cyan]User:[/bold cyan] {SHARED_QUERY}")
+
+    with Timer() as t:
+        response = await client.responses.create(
+            model=OPENAI_MODEL,
+            instructions=SHARED_INSTRUCTIONS,
+            tools=[
+                {
+                    "type": "web_search",
+                    "filters": {"allowed_domains": ALLOWED_DOMAINS},
+                }
+            ],
+            include=["web_search_call.action.sources"],
+            input=SHARED_QUERY,
+        )
+
+    console.print("\n[bold green]Agent:[/bold green]")
+    console.print(response.output_text)
+
+    console.print("\n[bold]Sources[/bold]")
+    for item in response.output:
+        if getattr(item, "type", None) == "web_search_call":
+            action = getattr(item, "action", None)
+            sources = getattr(action, "sources", None) if action else None
+            if sources:
+                for s in sources:
+                    console.print(f"- {getattr(s, 'url', s)}")
+
+    usage = usage_from_openai_response(response)
+    metrics = RunMetrics(
+        backend=BACKEND_NAME,
+        model=OPENAI_MODEL,
+        input_tokens=usage.get("input_tokens"),
+        output_tokens=usage.get("output_tokens"),
+        total_tokens=usage.get("total_tokens"),
+        search_calls=count_search_calls_in_openai_output(response),
+        latency_s=round(t.elapsed, 2),
+        answer_chars=len(response.output_text or ""),
+    )
+    metrics.cost_usd = round(
+        estimate_cost(
+            backend=metrics.backend,
+            model=metrics.model,
+            input_tokens=metrics.input_tokens,
+            output_tokens=metrics.output_tokens,
+            search_calls=metrics.search_calls,
+        ),
+        4,
+    )
+    print_metrics(metrics, console)
+    return metrics
+
+
+def main() -> None:
+    asyncio.run(run())
+
+
+if __name__ == "__main__":
+    main()
