@@ -7,6 +7,7 @@ import csv
 import os
 import traceback
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -14,10 +15,19 @@ from rich.console import Console
 from rich.table import Table
 
 from websearch_bench.backends import discover
-from websearch_bench.shared import SHARED_QUERY, RunMetrics
+from websearch_bench.report import write_html
+from websearch_bench.shared import MODEL, SHARED_QUERY, RunMetrics
 
 console = Console()
 RESULTS_CSV = Path.cwd() / "results.csv"
+RESULTS_HTML = Path.cwd() / "results.html"
+
+# Columns written to CSV. `answer` is intentionally excluded — it is multi-KB
+# free text and belongs in the HTML report, not a spreadsheet cell.
+_CSV_COLUMNS = [
+    "backend", "model", "input_tokens", "output_tokens", "total_tokens",
+    "search_calls", "latency_s", "cost_usd", "answer_chars", "notes",
+]
 
 
 def _missing(required: tuple[str, ...]) -> list[str]:
@@ -60,15 +70,16 @@ def render(results: list[RunMetrics]) -> None:
     console.print(table)
 
 
-def write_csv(results: list[RunMetrics], path: Path) -> None:
+def write_csv(results: list[RunMetrics], path: Path) -> Path:
     if not results:
-        return
+        return path
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(asdict(results[0]).keys()))
+        writer = csv.DictWriter(f, fieldnames=_CSV_COLUMNS, extrasaction="ignore")
         writer.writeheader()
         for r in results:
-            writer.writerow(asdict(r))
-    console.print(f"[dim]Wrote {path}[/dim]")
+            row = {k: v for k, v in asdict(r).items() if k in _CSV_COLUMNS}
+            writer.writerow(row)
+    return path.resolve()
 
 
 async def amain() -> None:
@@ -76,7 +87,17 @@ async def amain() -> None:
     results = await run_all()
     console.rule("[bold]Summary")
     render(results)
-    write_csv(results, RESULTS_CSV)
+
+    csv_path = write_csv(results, RESULTS_CSV)
+    html_path = write_html(
+        results,
+        RESULTS_HTML,
+        query=SHARED_QUERY,
+        model=MODEL,
+        generated_at=datetime.now(),
+    )
+    console.print(f"[dim]Wrote CSV : [link=file:///{csv_path.as_posix()}]{csv_path}[/link][/dim]")
+    console.print(f"[dim]Wrote HTML: [link=file:///{html_path.as_posix()}]{html_path}[/link][/dim]")
 
 
 def cli() -> None:

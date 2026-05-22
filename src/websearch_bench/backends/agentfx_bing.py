@@ -71,6 +71,7 @@ async def run() -> RunMetrics:
         search_calls=None,
         latency_s=round(t.elapsed, 2),
         answer_chars=len(result.text or ""),
+        answer=result.text or "",
         notes="search_calls not surfaced by agent_framework — assume 1 for cost",
     )
     metrics.cost_usd = round(

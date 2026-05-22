@@ -68,8 +68,12 @@ class RunMetrics:
     cost_usd: float | None = None
     answer_chars: int | None = None
     notes: str | None = None
+    # Full answer text — included in the HTML report, excluded from CSV.
+    answer: str | None = None
 
     def as_row(self) -> list[str]:
+        """Cells for the terminal rich.Table — does NOT include `answer`."""
+
         def fmt(v: Any, suffix: str = "") -> str:
             if v is None:
                 return "—"

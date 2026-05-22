@@ -64,6 +64,7 @@ async def run() -> RunMetrics:
                     console.print(f"- {getattr(s, 'url', s)}")
 
     usage = usage_from_openai_response(response)
+    answer = response.output_text or ""
     metrics = RunMetrics(
         backend=BACKEND_NAME,
         model=OPENAI_MODEL,
@@ -72,7 +73,8 @@ async def run() -> RunMetrics:
         total_tokens=usage.get("total_tokens"),
         search_calls=count_search_calls_in_openai_output(response),
         latency_s=round(t.elapsed, 2),
-        answer_chars=len(response.output_text or ""),
+        answer_chars=len(answer),
+        answer=answer,
     )
     metrics.cost_usd = round(
         estimate_cost(

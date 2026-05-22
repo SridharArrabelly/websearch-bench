@@ -91,6 +91,7 @@ async def run() -> RunMetrics:
         search_calls=count_search_calls_in_openai_output(response),
         latency_s=round(t.elapsed, 2),
         answer_chars=len(answer),
+        answer=answer,
     )
     metrics.cost_usd = round(
         estimate_cost(

@@ -114,9 +114,19 @@ uv run websearch-bench
 uv run python -m websearch_bench
 ```
 
-This runs every backend whose env vars are present, prints a `rich` table, and
-writes `results.csv` in the current working directory. Backends with missing
-env vars are **skipped with a warning** — they don't fail the run.
+This runs every backend whose env vars are present, prints a `rich` table in
+the terminal, and writes two artifacts to the current working directory:
+
+- **`results.html`** — self-contained report. Sortable summary table, bar
+  charts (cost / total tokens / latency), and each backend's full answer
+  collapsed in a `<details>` block. Open it in any browser. Chart.js is
+  loaded from a CDN, so the page needs internet to render the charts (the
+  table and answers still work offline).
+- **`results.csv`** — same metrics minus the answer text, for spreadsheets
+  and downstream scripting.
+
+Backends with missing env vars are **skipped with a warning** — they don't
+fail the run, and they still appear (greyed out) in both outputs.
 
 ### A single backend in isolation
 

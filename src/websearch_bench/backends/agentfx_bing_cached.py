@@ -161,6 +161,7 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
                     backend=f"{BACKEND_NAME} (hit)",
                     model=settings.model,
                     answer_chars=len(cached),
+                    answer=cached,
                     latency_s=0.0,
                     cost_usd=0.0,
                     notes="served from Redis cache — no Bing call",
@@ -191,6 +192,7 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
             total_tokens=usage.get("total_tokens"),
             latency_s=round(t.elapsed, 2),
             answer_chars=len(result.text or ""),
+            answer=result.text or "",
             notes="cache miss — Bing called, result cached",
         )
         metrics.cost_usd = round(
