@@ -40,6 +40,7 @@ from websearch_bench.shared import (
     USER_COUNTRY,
     RunMetrics,
     Timer,
+    count_search_calls_in_agent_response,
     print_metrics,
     usage_from_agent_framework,
 )
@@ -184,12 +185,14 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
         console.print(f"[bold green]Agent:[/bold green] {result.text}")
 
         usage = usage_from_agent_framework(result)
+        search_calls = count_search_calls_in_agent_response(result)
         metrics = RunMetrics(
             backend=f"{BACKEND_NAME} (miss)",
             model=settings.model,
             input_tokens=usage.get("input_tokens"),
             output_tokens=usage.get("output_tokens"),
             total_tokens=usage.get("total_tokens"),
+            search_calls=search_calls,
             latency_s=round(t.elapsed, 2),
             answer_chars=len(result.text or ""),
             answer=result.text or "",
@@ -201,7 +204,7 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
                 model=metrics.model,
                 input_tokens=metrics.input_tokens,
                 output_tokens=metrics.output_tokens,
-                search_calls=1,
+                search_calls=metrics.search_calls if metrics.search_calls else 1,
             ),
             4,
         )

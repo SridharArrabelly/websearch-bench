@@ -146,6 +146,33 @@ def count_search_calls_in_openai_output(response: Any) -> int:
     return sum(1 for item in output if getattr(item, "type", None) == "web_search_call")
 
 
+def count_search_calls_in_agent_response(result: Any) -> int | None:
+    """Count tool invocations the agent_framework agent made to web_search.
+
+    Walks ``result.messages[*].contents[*]`` and counts ``Content`` items whose
+    ``type`` is ``"search_tool_call"`` (Bing/web search) or a function/MCP
+    call that targets a search tool by name. Returns ``None`` only if the
+    response has no messages at all (so the caller can distinguish "no data"
+    from "the model chose not to search").
+    """
+    messages = getattr(result, "messages", None)
+    if not messages:
+        return None
+    count = 0
+    for msg in messages:
+        for content in getattr(msg, "contents", None) or []:
+            ctype = getattr(content, "type", None)
+            if ctype == "search_tool_call":
+                count += 1
+            elif ctype == "function_call":
+                # Some providers surface the web search as a generic function call
+                # named "web_search" / "web_search_preview" / "bing_search".
+                name = (getattr(content, "name", "") or "").lower()
+                if "search" in name:
+                    count += 1
+    return count
+
+
 def usage_from_agent_framework(result: Any) -> dict[str, int | None]:
     """Token extraction from an agent_framework ``AgentResponse``.
 

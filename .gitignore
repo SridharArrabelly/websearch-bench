@@ -9,3 +9,7 @@ results.html
 *.egg-info/
 build/
 dist/
+
+# Backup env files
+.env.bak
+.env.*.bak
