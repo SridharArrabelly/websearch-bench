@@ -27,8 +27,26 @@ from websearch_bench.shared import (
 
 BACKEND_NAME = "openai-web-search"
 REQUIRED_ENV: tuple[str, ...] = ("OPENAI_API_KEY",)
+# This backend is opt-in because it bills against an OpenAI subscription
+# (web_search is $10/1k calls + standard token rates). Most contributors only
+# care about the Azure/Foundry surfaces, so we skip it unless explicitly
+# enabled.
+_ENABLE_VAR = "ENABLE_OPENAI_WEB_SEARCH"
 
 console = Console()
+
+
+def enabled() -> tuple[bool, str]:
+    """Skip unless the user explicitly opts in.
+
+    Returns ``(True, "")`` to run, or ``(False, reason)`` to skip. The
+    benchmark runner uses this hook to decide whether to invoke ``run()``.
+    """
+    load_dotenv(override=True)
+    val = os.getenv(_ENABLE_VAR, "").strip().lower()
+    if val in ("1", "true", "yes", "on"):
+        return True, ""
+    return False, f"set {_ENABLE_VAR}=1 to enable (requires paid OpenAI subscription)"
 
 
 async def run() -> RunMetrics:

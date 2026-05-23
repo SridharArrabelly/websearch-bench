@@ -96,7 +96,12 @@ Minimum env vars per backend (set in `.env`):
 | `foundry-bing-custom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `agentfx-bing` | `PROJECT_ENDPOINT`, `MODEL` |
 | `agentfx-bing-cached` | above + `REDIS_URL` (and a running Redis) |
-| `openai-web-search` | `OPENAI_API_KEY`, optional `OPENAI_MODEL` |
+| `openai-web-search` | `OPENAI_API_KEY`, `ENABLE_OPENAI_WEB_SEARCH=1`, optional `OPENAI_MODEL` |
+
+`openai-web-search` is **opt-in** — it bills against your OpenAI subscription
+(token rates + $10/1k for the `web_search` tool). Set
+`ENABLE_OPENAI_WEB_SEARCH=1` to include it in the comparison; it's skipped by
+default so you can run the Azure/Foundry surfaces without an OpenAI key.
 
 Optional everywhere:
 

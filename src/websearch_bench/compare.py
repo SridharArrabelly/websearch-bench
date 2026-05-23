@@ -40,6 +40,13 @@ async def run_all() -> list[RunMetrics]:
     for module in discover():
         label: str = getattr(module, "BACKEND_NAME", module.__name__)
         required: tuple[str, ...] = getattr(module, "REQUIRED_ENV", ())
+        enabled_fn = getattr(module, "enabled", None)
+        if callable(enabled_fn):
+            enabled, reason = enabled_fn()
+            if not enabled:
+                console.print(f"[yellow]Skipping {label}: {reason}[/yellow]")
+                results.append(RunMetrics(backend=label, model="—", notes=f"skipped ({reason})"))
+                continue
         missing = _missing(required)
         if missing:
             console.print(f"[yellow]Skipping {label}: missing env {', '.join(missing)}[/yellow]")
