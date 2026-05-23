@@ -18,10 +18,21 @@ ecosystem, and each one bills differently:
 | `agentfx-bing-cached` | `agent-framework-foundry` + Redis | Same as above, with Redis answer cache | 0 on cache hit; otherwise as above |
 | `openai-ws` | `openai` | Responses API native `web_search` tool (`allowed_domains`) | OpenAI `web_search` per call |
 
-The whole point is that **every backend hits the same model with the same query,
-same `search_context_size`, same domain filter, and same instructions** — so the
-numbers are comparable. All shared workload lives in
-[`src/websearch_bench/shared.py`](src/websearch_bench/shared.py).
+The whole point is that **every backend hits the same model with the same query
+and the same instructions** — so the numbers are comparable. All shared
+workload lives in [`src/websearch_bench/shared.py`](src/websearch_bench/shared.py).
+
+Two of the per-tool knobs can't be wired *uniformly* across SDKs because the
+SDKs themselves don't all expose them. Here's the honest truth:
+
+| Setting | `foundry-ws-bing` | `foundry-ws-bingcustom` | `agentfx-bing*` | `openai-ws` |
+| --- | --- | --- | --- | --- |
+| `SEARCH_CONTEXT_SIZE` (`shared.py`) | ✅ passed to `WebSearchTool` | ✅ passed to `WebSearchTool` | ✅ passed via `get_web_search_tool` | ❌ not accepted by the OpenAI Responses `web_search` `filters` block |
+| `ALLOWED_DOMAINS` (`shared.py`) | ❌ `azure-ai-projects` `WebSearchTool` does not accept it | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed via `get_web_search_tool(allowed_domains=…)` | ✅ passed as `filters.allowed_domains` |
+
+So for a strictly apples-to-apples comparison, either accept the limitations
+above or pin the Bing Custom Search instance to the same domain list you've
+hard-coded in `ALLOWED_DOMAINS`.
 
 ## Repository layout
 
@@ -260,9 +271,21 @@ quoting.
 
 ## Change the workload
 
-Every backend reads its workload from `src/websearch_bench/shared.py`. To
-benchmark a different query / model / domain / `search_context_size`, edit
-those module-level constants once and rerun `websearch-bench`.
+Every backend reads its workload from `src/websearch_bench/shared.py`. Edit
+those module-level constants once and rerun `websearch-bench`:
+
+- `SHARED_QUERY` — the prompt every backend gets.
+- `SHARED_INSTRUCTIONS` — system instructions.
+- `MODEL` — model used by all Foundry / Agent Framework backends.
+- `USER_COUNTRY` / `USER_REGION` / `USER_CITY` — `user_location` hint.
+- `SEARCH_CONTEXT_SIZE` — `"low" | "medium" | "high"`. Honored by all
+  backends except `openai-ws` (the OpenAI Responses `web_search` `filters`
+  block doesn't expose it today).
+- `ALLOWED_DOMAINS` — only honored by `agentfx-bing*` and `openai-ws`. For
+  `foundry-ws-bingcustom` you must set the allowed-domain list on the
+  Bing Custom Search instance itself in the [Bing portal](https://www.customsearch.ai/).
+  For `foundry-ws-bing` there is no domain filter — the `azure-ai-projects`
+  `WebSearchTool` does not accept one.
 
 ## Pricing
 
