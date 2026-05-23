@@ -1,30 +1,23 @@
-"""Cost-optimised variant of foundry-ws-bing.
+"""Foundry agent grounded with the legacy ``BingGroundingTool``.
 
-Same plumbing as :mod:`foundry_ws_bing` but with three changes designed to
-minimise Bing fan-out and input-token bloat:
+Unlike :mod:`foundry_ws_bing` which wraps OpenAI's new ``web_search`` tool
+(``WebSearchTool``), this backend uses the original **Grounding with Bing
+Search** tool — a single-shot search → snippet → answer pattern that does
+**not** fan out into multiple Bing transactions per request.
 
-1. ``max_tool_calls=1`` on the Responses request — hard cap on how many
-   ``web_search_call`` rounds the model can emit. Eliminates "refine the
-   query and search again" loops, which are the dominant source of input
-   token growth (each round re-feeds the conversation including all prior
-   Bing results).
-2. ``parallel_tool_calls=False`` — additionally prevents concurrent
-   tool execution; defence in depth alongside ``max_tool_calls``.
-3. ``tool_choice={"type": "web_search"}`` — forces exactly one
-   ``web_search`` invocation instead of letting the model decide whether
-   to search at all.
-4. Stricter system prompt (``SHARED_INSTRUCTIONS_SINGLE_QUERY``) telling
-   the model to craft a single optimised search phrase.
+For the same prompt, this typically uses ~5K input tokens vs ~15K for
+``foundry-ws-bing``, with a single Bing API charge instead of N. The
+trade-off is no per-call refinement: the model gets one snapshot of Bing
+results to answer from.
 
-Caveats:
+Reference:
+https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/bing-tools?pivots=python
 
-- Foundry's server-side ``web.run`` extension still fans one
-  ``web_search_call`` into N Bing transactions internally; the API has no
-  knob to control that. So this backend reduces fan-out at the *model*
-  layer (rounds), not at the *Bing* layer (transactions per round).
-- The single-query constraint can hurt answer quality on multi-faceted
-  questions. The whole point of this backend is to put the trade-off in
-  hard numbers next to the unconstrained ``foundry-ws-bing``.
+Required env vars:
+    PROJECT_ENDPOINT             — Foundry project endpoint
+    BING_PROJECT_CONNECTION_NAME — name of the Grounding-with-Bing connection
+                                   on the project (looked up via
+                                   ``project.connections.get(NAME)``)
 """
 
 from __future__ import annotations
@@ -34,10 +27,10 @@ import os
 
 from azure.ai.projects.aio import AIProjectClient
 from azure.ai.projects.models import (
+    BingGroundingSearchConfiguration,
+    BingGroundingSearchToolParameters,
+    BingGroundingTool,
     PromptAgentDefinition,
-    WebSearchApproximateLocation,
-    WebSearchTool,
-    WebSearchToolFilters,
 )
 from dotenv import load_dotenv
 from rich.console import Console
@@ -45,25 +38,20 @@ from rich.console import Console
 from websearch_bench.auth import make_credential
 from websearch_bench.pricing import estimate_cost
 from websearch_bench.shared import (
-    ALLOWED_DOMAINS,
     MODEL,
-    SEARCH_CONTEXT_SIZE,
-    SHARED_INSTRUCTIONS_SINGLE_QUERY,
+    SHARED_INSTRUCTIONS,
     SHARED_QUERY,
-    USER_CITY,
-    USER_COUNTRY,
-    USER_REGION,
     RunMetrics,
     Timer,
     count_bing_queries_in_openai_output,
-    debug_dump,
     count_web_search_calls_in_openai_output,
+    debug_dump,
     print_metrics,
     usage_from_openai_response,
 )
 
-BACKEND_NAME = "foundry-ws-bing-cheap"
-REQUIRED_ENV: tuple[str, ...] = ("PROJECT_ENDPOINT",)
+BACKEND_NAME = "foundry-bing"
+REQUIRED_ENV: tuple[str, ...] = ("PROJECT_ENDPOINT", "BING_PROJECT_CONNECTION_NAME")
 
 console = Console()
 
@@ -71,6 +59,7 @@ console = Console()
 async def run() -> RunMetrics:
     load_dotenv(override=True)
     project_endpoint = os.environ["PROJECT_ENDPOINT"]
+    bing_connection_name = os.environ["BING_PROJECT_CONNECTION_NAME"]
 
     async with (
         make_credential() as credential,
@@ -78,24 +67,27 @@ async def run() -> RunMetrics:
     ):
         openai = project.get_openai_client()
 
+        # Resolve the connection ID from its friendly name (per the docs).
+        bing_connection = await project.connections.get(bing_connection_name)
+
         agent = await project.agents.create_version(
-            agent_name="foundry-ws-bing-cheap",
+            agent_name="foundry-bing",
             definition=PromptAgentDefinition(
                 model=MODEL,
-                instructions=SHARED_INSTRUCTIONS_SINGLE_QUERY,
+                instructions=SHARED_INSTRUCTIONS,
                 tools=[
-                    WebSearchTool(
-                        user_location=WebSearchApproximateLocation(
-                            country=USER_COUNTRY,
-                            city=USER_CITY,
-                            region=USER_REGION,
-                        ),
-                        search_context_size=SEARCH_CONTEXT_SIZE,
-                        filters=WebSearchToolFilters(allowed_domains=ALLOWED_DOMAINS),
+                    BingGroundingTool(
+                        bing_grounding=BingGroundingSearchToolParameters(
+                            search_configurations=[
+                                BingGroundingSearchConfiguration(
+                                    project_connection_id=bing_connection.id,
+                                )
+                            ],
+                        )
                     )
                 ],
             ),
-            description="Cost-optimised Foundry Bing Web Search backend (max_tool_calls=1).",
+            description="Foundry Bing Grounding (legacy single-shot) benchmark backend.",
         )
         console.print(
             f"[dim]Agent created id={agent.id} name={agent.name} version={agent.version}[/dim]"
@@ -105,9 +97,7 @@ async def run() -> RunMetrics:
         with Timer() as t:
             response = await openai.responses.create(
                 input=SHARED_QUERY,
-                max_tool_calls=1,
-                parallel_tool_calls=False,
-                tool_choice={"type": "web_search"},
+                tool_choice="required",
                 extra_body={
                     "agent_reference": {"name": agent.name, "type": "agent_reference"}
                 },
@@ -132,7 +122,7 @@ async def run() -> RunMetrics:
         latency_s=round(t.elapsed, 2),
         answer_chars=len(answer),
         answer=answer,
-        notes="max_tool_calls=1 + tool_choice=web_search; bing_queries lower bound — server fan-out hidden",
+        notes="BingGroundingTool: single-shot Bing query (no server fan-out)",
     )
     metrics.cost_usd = round(
         estimate_cost(

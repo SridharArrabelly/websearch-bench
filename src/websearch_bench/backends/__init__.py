@@ -16,8 +16,8 @@ from importlib import import_module
 from types import ModuleType
 
 _BACKEND_MODULES: list[str] = [
+    "websearch_bench.backends.foundry_bing",
     "websearch_bench.backends.foundry_ws_bing",
-    "websearch_bench.backends.foundry_ws_bing_cheap",
     "websearch_bench.backends.foundry_ws_bingcustom",
     "websearch_bench.backends.agentfx_ws",
     "websearch_bench.backends.agentfx_ws_cached",

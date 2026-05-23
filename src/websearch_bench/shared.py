@@ -36,19 +36,6 @@ SHARED_INSTRUCTIONS: str = (
     "Sources list containing only URLs returned by the tool."
 )
 
-# Tighter variant used by cost-optimised backends (e.g. foundry-ws-bing-cheap).
-# Forces the model to issue exactly one Bing query instead of fanning out into
-# multiple refinement rounds. Combine with ``max_tool_calls=1`` +
-# ``tool_choice={"type":"web_search"}`` on the Responses API for hard enforcement.
-SHARED_INSTRUCTIONS_SINGLE_QUERY: str = (
-    SHARED_INSTRUCTIONS
-    + " When gathering information from the web, you MUST solve the user's "
-    "request using exactly ONE search query. Do not break the request down "
-    "into multiple sequential searches or look up multiple distinct terms. "
-    "Craft one optimized search phrase, execute it once, and formulate your "
-    "final response from those results."
-)
-
 # Model. Override via MODEL env var. Keep the same model across backends.
 MODEL: str = os.getenv("MODEL", "gpt-5.1")
 
