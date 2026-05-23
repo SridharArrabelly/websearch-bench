@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 
 from websearch_bench.pricing import estimate_cost
+from websearch_bench.appinsights import reconcile_metrics
 from websearch_bench.shared import (
     MODEL,
     SEARCH_CONTEXT_SIZE,
@@ -117,6 +118,7 @@ async def run() -> RunMetrics:
         ),
         4,
     )
+    await reconcile_metrics(metrics, getattr(response, "id", None), console=console)
     print_metrics(metrics, console)
     return metrics
 

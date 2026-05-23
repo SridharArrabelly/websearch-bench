@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 
 from websearch_bench.pricing import estimate_cost
+from websearch_bench.appinsights import find_response_id, reconcile_metrics
 from websearch_bench.shared import (
     ALLOWED_DOMAINS,
     MODEL,
@@ -99,6 +100,7 @@ async def run() -> RunMetrics:
         ),
         4,
     )
+    await reconcile_metrics(metrics, find_response_id(result), console=console)
     print_metrics(metrics, console)
     return metrics
 
