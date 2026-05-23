@@ -43,7 +43,6 @@ from websearch_bench.shared import (
     Timer,
     count_bing_queries_in_agent_response,
     debug_dump,
-    count_tool_calls_in_agent_response,
     count_web_search_calls_in_agent_response,
     print_metrics,
     usage_from_agent_framework,
@@ -194,7 +193,6 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
         usage = usage_from_agent_framework(result)
         web_search_calls = count_web_search_calls_in_agent_response(result)
         bing_queries = count_bing_queries_in_agent_response(result)
-        tool_calls = count_tool_calls_in_agent_response(result)
         metrics = RunMetrics(
             backend=f"{BACKEND_NAME} (miss)",
             model=settings.model,
@@ -204,7 +202,6 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
             total_tokens=usage.get("total_tokens"),
             web_search_calls=web_search_calls,
             bing_queries=bing_queries,
-            tool_calls=tool_calls,
             latency_s=round(t.elapsed, 2),
             answer_chars=len(result.text or ""),
             answer=result.text or "",

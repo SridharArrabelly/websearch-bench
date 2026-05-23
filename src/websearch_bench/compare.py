@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import os
+import sys
 import traceback
 from dataclasses import asdict
 from datetime import datetime
@@ -27,7 +28,7 @@ RESULTS_HTML = Path.cwd() / "results.html"
 # free text and belongs in the HTML report, not a spreadsheet cell.
 _CSV_COLUMNS = [
     "backend", "model", "input_tokens", "cached_input_tokens", "output_tokens",
-    "total_tokens", "web_search_calls", "bing_queries", "tool_calls",
+    "total_tokens", "web_search_calls", "bing_queries",
     "latency_s", "cost_usd", "answer_chars", "notes",
 ]
 
@@ -92,7 +93,7 @@ def render(results: list[RunMetrics]) -> None:
     table = Table(title=f"Web-search comparison — query: {SHARED_QUERY!r}")
     for col in [
         "backend", "model", "in_tok", "cached", "out_tok", "total_tok",
-        "ws_calls", "bing_q", "tool_calls", "latency", "cost", "answer", "notes",
+        "ws_calls", "bing_q", "latency", "cost", "answer", "notes",
     ]:
         table.add_column(col)
     for r in results:
@@ -129,19 +130,44 @@ async def reconcile_all(results: list[RunMetrics]) -> None:
         console.print(f"[dim]-> {r.backend}: {r.response_id}[/dim]")
 
     async def _one(r: RunMetrics) -> None:
-        await reconcile_metrics(r, r.response_id, console=None, timeout_s=90)
-        status = (
-            f"bing_queries={r.bing_queries}  cost=${r.cost_usd}"
-            if "App Insights chat span" in (r.notes or "")
-            else "not reconciled (lower bound retained)"
-        )
+        await reconcile_metrics(r, r.response_id, console=None, timeout_s=180)
+        notes = r.notes or ""
+        if "App Insights chat span" in notes and "0 tool msgs" not in notes:
+            status = f"bing_queries={r.bing_queries}  cost=${r.cost_usd}"
+        elif "0 tool msgs" in notes:
+            status = "client-side span (no tool msgs visible) — lower bound retained"
+        else:
+            status = "not reconciled (lower bound retained)"
         console.print(f"[dim]   {r.backend}: {status}[/dim]")
 
     await asyncio.gather(*(_one(r) for r in targets))
 
 
+def _setup_tracing() -> None:
+    """Enable Azure Monitor + agent_framework OTel instrumentation, if available.
+
+    Without this the agent_framework backends emit no spans and reconcile
+    can't find their chat span in App Insights. The Foundry-hosted backends
+    don't need this — their server-side instrumentation emits spans regardless.
+    Safe to call when APPLICATIONINSIGHTS_CONNECTION_STRING is unset (no-op).
+    """
+    if not os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
+        return
+    try:
+        from azure.monitor.opentelemetry import configure_azure_monitor
+        from agent_framework.observability import enable_instrumentation
+    except ImportError:
+        return
+    try:
+        configure_azure_monitor()
+        enable_instrumentation(enable_sensitive_data=True)
+    except Exception as exc:
+        console.print(f"[yellow]Tracing setup skipped: {exc}[/yellow]")
+
+
 async def amain() -> None:
     load_dotenv(override=True)
+    _setup_tracing()
     results = await run_all()
     await reconcile_all(results)
     console.rule("[bold]Summary")
@@ -161,6 +187,14 @@ async def amain() -> None:
 
 def cli() -> None:
     """Entry point exposed as the ``websearch-bench`` console script."""
+    # Force UTF-8 on stdout/stderr so agent answers containing characters
+    # outside cp1252 (arrows, em-dashes, currency symbols) don't crash rich
+    # on Windows legacy consoles.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     asyncio.run(amain())
 
 

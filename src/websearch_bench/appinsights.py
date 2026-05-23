@@ -226,6 +226,17 @@ async def reconcile_metrics(
         )
         return metrics
 
+    if facts.tool_msgs == 0:
+        # Client-side span (e.g. agent_framework OTel): captures only the
+        # initial system+user input, never the post-fan-out conversation.
+        # Don't overwrite the lower-bound bing_queries — that would be worse
+        # than not reconciling at all.
+        metrics.notes = (
+            (metrics.notes + " | " if metrics.notes else "")
+            + "App Insights chat span has 0 tool msgs (client-side instrumentation) — bing_queries is lower bound"
+        )
+        return metrics
+
     metrics.bing_queries = facts.tool_msgs
     metrics.notes = f"bing_queries from App Insights chat span (tool_msgs={facts.tool_msgs})"
     metrics.cost_usd = round(

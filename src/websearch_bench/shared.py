@@ -76,10 +76,6 @@ class RunMetrics:
     # because one model-level web_search_call can fan out to many Bing
     # transactions inside the tool. Equals web_search_calls when no fan-out.
     bing_queries: int | None = None
-    # Total tool invocations across ALL tools (web_search, function calls,
-    # MCP, code interpreter, ...). For the current setup this equals
-    # ``web_search_calls`` because we only attach web_search.
-    tool_calls: int | None = None
     latency_s: float | None = None
     cost_usd: float | None = None
     answer_chars: int | None = None
@@ -110,7 +106,6 @@ class RunMetrics:
             fmt(self.total_tokens),
             fmt(self.web_search_calls),
             fmt(self.bing_queries),
-            fmt(self.tool_calls),
             fmt(self.latency_s, " s"),
             fmt(self.cost_usd, " USD"),
             fmt(self.answer_chars, " chars"),

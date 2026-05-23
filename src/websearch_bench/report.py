@@ -44,7 +44,6 @@ def _row(m: RunMetrics) -> tuple[bool, list[str]]:
         _fmt(m.total_tokens),
         _fmt(m.web_search_calls),
         _fmt(m.bing_queries),
-        _fmt(m.tool_calls),
         _fmt(m.latency_s, " s"),
         _fmt(m.cost_usd, " USD"),
         _fmt(m.answer_chars),
@@ -160,7 +159,7 @@ def render_html(
 <table id="summary">
   <thead><tr>
     <th>backend</th><th>model</th><th>in tok</th><th>cached in</th><th>out tok</th><th>total tok</th>
-    <th>web search calls</th><th>bing queries</th><th>tool calls</th><th>latency</th><th>cost</th>
+    <th>web search calls</th><th>bing queries</th><th>latency</th><th>cost</th>
     <th>answer chars</th><th>notes</th>
   </tr></thead>
   <tbody>

@@ -25,7 +25,6 @@ from websearch_bench.shared import (
     Timer,
     count_bing_queries_in_agent_response,
     debug_dump,
-    count_tool_calls_in_agent_response,
     count_web_search_calls_in_agent_response,
     print_metrics,
     usage_from_agent_framework,
@@ -54,7 +53,7 @@ async def run() -> RunMetrics:
         )
         agent = Agent(
             client=client,
-            name="WebSearchToolAgent",
+            name="AgentFx-WebSearchTool",
             instructions=SHARED_INSTRUCTIONS,
             tools=[web_search_tool],
             description="Agent Framework + Foundry Bing benchmark backend.",
@@ -72,7 +71,6 @@ async def run() -> RunMetrics:
     usage = usage_from_agent_framework(result)
     web_search_calls = count_web_search_calls_in_agent_response(result)
     bing_queries = count_bing_queries_in_agent_response(result)
-    tool_calls = count_tool_calls_in_agent_response(result)
     metrics = RunMetrics(
         backend=BACKEND_NAME,
         model=MODEL,
@@ -82,7 +80,6 @@ async def run() -> RunMetrics:
         total_tokens=usage.get("total_tokens"),
         web_search_calls=web_search_calls,
         bing_queries=bing_queries,
-        tool_calls=tool_calls,
         latency_s=round(t.elapsed, 2),
         answer_chars=len(result.text or ""),
         answer=result.text or "",

@@ -177,7 +177,6 @@ Each run reports a normalized `RunMetrics` row:
 | `cached_input_tokens` | Portion of `input_tokens` served from Azure OpenAI prompt caching. Billed at the **cached_input** rate (≈10× cheaper). Same number surfaced on the Foundry App Insights span as `gen_ai.usage.cached_tokens`. |
 | `web_search_calls` | Number of `web_search_call` items in the response — i.e. distinct tool invocations the model emitted. |
 | `bing_queries` | True Bing transaction count, **reconciled from App Insights** when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set. For Foundry-hosted backends (`foundry-bing`, `foundry-bing-custom`, `agentfx-bing*`) this is `count(role=="tool")` from the `chat` span's `gen_ai.input.messages` array — the only place the server-side `web.run` fan-out is visible (the Responses API only exposes a summarized `action.queries`). Without the App Insights env var, falls back to `action.queries` length, which is a lower bound. For `openai-web-search` (no server-side fan-out) `action.queries` is exact. |
-| `tool_calls` | Total tool invocations (web_search + function + MCP + code interpreter, …). Equals `web_search_calls` in this bench because web_search is the only attached tool. |
 | `latency_s` | Wall-clock seconds from sending the request to receiving the final response. |
 | `cost_usd` | See cost formula below. |
 | `answer_chars` | Length of the agent's final answer text. |
