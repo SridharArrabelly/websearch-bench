@@ -1,18 +1,22 @@
 """Pricing constants and cost estimator.
 
-IMPORTANT — values below are illustrative defaults. Pricing changes; please
-verify against the official pages before quoting any number to a customer:
+Verified against vendor pricing pages on 2025/2026 (see links below).
+Values are still env-overridable for what-if scenarios.
 
 - Azure AI Foundry / Azure OpenAI model pricing:
   https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/
-- Grounding with Bing Search (Foundry connection) pricing:
-  https://www.microsoft.com/bing/apis/grounding-pricing
-- Grounding with Bing Custom Search pricing:
-  https://www.microsoft.com/bing/apis/pricing
-- OpenAI Responses API + web_search tool pricing:
-  https://openai.com/api/pricing/
+- Grounding with Bing Search (Foundry connection):
+  https://www.microsoft.com/bing/apis/grounding-pricing  →  $35 / 1,000 queries
+- Grounding with Bing Custom Search (legacy SKU $14/1K is being retired in 2025;
+  new SKU on the same page is $35/1,000).
+- OpenAI Responses API + ``web_search`` tool:
+  https://openai.com/api/pricing/   →  $10 / 1,000 calls (all models)
+  (``web_search_preview`` for non-reasoning models is priced separately at
+  $25-30 / 1,000; use OPENAI_WEB_SEARCH_USD_PER_1K to override.)
 
-Override any value with an env var (e.g. ``BING_GROUNDING_USD_PER_CALL=0.04``).
+Every tool is billed *per call*. A single user prompt can trigger 0..N
+calls to the web-search tool — the model decides. We report this as
+``web_search_calls`` per run and use ``cost = calls * price_per_1000 / 1000``.
 """
 
 from __future__ import annotations
@@ -20,7 +24,7 @@ from __future__ import annotations
 import os
 
 # ---------------------------------------------------------------------------
-# Model token pricing (USD per 1,000 tokens). Placeholders — REPLACE.
+# Model token pricing (USD per 1,000 tokens). Verify before quoting.
 # ---------------------------------------------------------------------------
 
 MODEL_PRICING_PER_1K: dict[str, dict[str, float]] = {
@@ -40,10 +44,32 @@ def _env_float(name: str, default: float) -> float:
         return default
 
 
-# Per-call tool charges, USD. Override via env vars.
-BING_GROUNDING_USD_PER_CALL: float = _env_float("BING_GROUNDING_USD_PER_CALL", 0.035)
-BING_CUSTOM_USD_PER_CALL: float = _env_float("BING_CUSTOM_USD_PER_CALL", 0.025)
-OPENAI_WEB_SEARCH_USD_PER_CALL: float = _env_float("OPENAI_WEB_SEARCH_USD_PER_CALL", 0.030)
+# ---------------------------------------------------------------------------
+# Tool charges. Defaults express the vendor list price PER 1,000 CALLS so the
+# magnitude matches what you see on the pricing page; we divide by 1000 below.
+# Env vars override either the per-1000 (preferred) or the legacy per-call name.
+# ---------------------------------------------------------------------------
+
+BING_GROUNDING_USD_PER_1K: float = _env_float(
+    "BING_GROUNDING_USD_PER_1K",
+    _env_float("BING_GROUNDING_USD_PER_CALL", 0.035) * 1000.0
+    if os.getenv("BING_GROUNDING_USD_PER_CALL") else 35.0,
+)
+BING_CUSTOM_USD_PER_1K: float = _env_float(
+    "BING_CUSTOM_USD_PER_1K",
+    _env_float("BING_CUSTOM_USD_PER_CALL", 0.035) * 1000.0
+    if os.getenv("BING_CUSTOM_USD_PER_CALL") else 35.0,
+)
+OPENAI_WEB_SEARCH_USD_PER_1K: float = _env_float(
+    "OPENAI_WEB_SEARCH_USD_PER_1K",
+    _env_float("OPENAI_WEB_SEARCH_USD_PER_CALL", 0.010) * 1000.0
+    if os.getenv("OPENAI_WEB_SEARCH_USD_PER_CALL") else 10.0,
+)
+
+# Kept for backward-compatibility (HTML report still shows these).
+BING_GROUNDING_USD_PER_CALL: float = BING_GROUNDING_USD_PER_1K / 1000.0
+BING_CUSTOM_USD_PER_CALL: float = BING_CUSTOM_USD_PER_1K / 1000.0
+OPENAI_WEB_SEARCH_USD_PER_CALL: float = OPENAI_WEB_SEARCH_USD_PER_1K / 1000.0
 
 
 def model_token_cost(
@@ -61,23 +87,29 @@ def model_token_cost(
     return cost
 
 
+def tool_cost(backend: str, web_search_calls: int | None) -> float:
+    """USD cost for the per-call charge of the web-search tool of this backend."""
+    calls = web_search_calls or 0
+    if backend.startswith("foundry-bing-custom"):
+        return calls * BING_CUSTOM_USD_PER_1K / 1000.0
+    if backend.startswith("foundry-bing") or backend.startswith("agentfx"):
+        return calls * BING_GROUNDING_USD_PER_1K / 1000.0
+    if backend.startswith("openai-web-search"):
+        return calls * OPENAI_WEB_SEARCH_USD_PER_1K / 1000.0
+    return 0.0
+
+
 def estimate_cost(
     *,
     backend: str,
     model: str,
     input_tokens: int | None,
     output_tokens: int | None,
-    search_calls: int | None,
+    web_search_calls: int | None = None,
+    # Legacy alias — older callers passed ``search_calls``. Kept so existing
+    # backends keep working until they're all migrated in one PR.
+    search_calls: int | None = None,
 ) -> float:
-    """USD estimate for a single run. Tool charges depend on the backend."""
-    tokens = model_token_cost(model, input_tokens, output_tokens)
-    calls = search_calls or 0
-    if backend.startswith("foundry-bing-custom"):
-        tool = calls * BING_CUSTOM_USD_PER_CALL
-    elif backend.startswith("foundry-bing") or backend.startswith("agentfx"):
-        tool = calls * BING_GROUNDING_USD_PER_CALL
-    elif backend.startswith("openai-web-search"):
-        tool = calls * OPENAI_WEB_SEARCH_USD_PER_CALL
-    else:
-        tool = 0.0
-    return tokens + tool
+    """USD estimate for a single run. = model token cost + per-call tool cost."""
+    calls = web_search_calls if web_search_calls is not None else search_calls
+    return model_token_cost(model, input_tokens, output_tokens) + tool_cost(backend, calls)

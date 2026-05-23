@@ -13,10 +13,10 @@ from datetime import datetime
 from pathlib import Path
 
 from .pricing import (
-    BING_CUSTOM_USD_PER_CALL,
-    BING_GROUNDING_USD_PER_CALL,
+    BING_CUSTOM_USD_PER_1K,
+    BING_GROUNDING_USD_PER_1K,
     MODEL_PRICING_PER_1K,
-    OPENAI_WEB_SEARCH_USD_PER_CALL,
+    OPENAI_WEB_SEARCH_USD_PER_1K,
 )
 from .shared import RunMetrics
 
@@ -41,7 +41,8 @@ def _row(m: RunMetrics) -> tuple[bool, list[str]]:
         _fmt(m.input_tokens),
         _fmt(m.output_tokens),
         _fmt(m.total_tokens),
-        _fmt(m.search_calls),
+        _fmt(m.web_search_calls),
+        _fmt(m.tool_calls),
         _fmt(m.latency_s, " s"),
         _fmt(m.cost_usd, " USD"),
         _fmt(m.answer_chars),
@@ -98,9 +99,9 @@ def render_html(
     pricing_json = json.dumps(
         {
             "model_per_1k_tokens": MODEL_PRICING_PER_1K,
-            "bing_grounding_per_call": BING_GROUNDING_USD_PER_CALL,
-            "bing_custom_per_call": BING_CUSTOM_USD_PER_CALL,
-            "openai_web_search_per_call": OPENAI_WEB_SEARCH_USD_PER_CALL,
+            "bing_grounding_per_1k_calls": BING_GROUNDING_USD_PER_1K,
+            "bing_custom_per_1k_calls": BING_CUSTOM_USD_PER_1K,
+            "openai_web_search_per_1k_calls": OPENAI_WEB_SEARCH_USD_PER_1K,
         },
         indent=2,
     )
@@ -157,7 +158,8 @@ def render_html(
 <table id="summary">
   <thead><tr>
     <th>backend</th><th>model</th><th>in tok</th><th>out tok</th><th>total tok</th>
-    <th>search calls</th><th>latency</th><th>cost</th><th>answer chars</th><th>notes</th>
+    <th>web search calls</th><th>tool calls</th><th>latency</th><th>cost</th>
+    <th>answer chars</th><th>notes</th>
   </tr></thead>
   <tbody>
 {rows_html}
@@ -177,8 +179,8 @@ def render_html(
 <h2>Pricing inputs (illustrative)</h2>
 <details><summary>Show pricing constants used for cost estimation</summary>
 <pre>{html.escape(pricing_json)}</pre>
-<p>Override via env vars (<code>BING_GROUNDING_USD_PER_CALL</code>,
-<code>BING_CUSTOM_USD_PER_CALL</code>, <code>OPENAI_WEB_SEARCH_USD_PER_CALL</code>)
+<p>Override via env vars (<code>BING_GROUNDING_USD_PER_1K</code>,
+<code>BING_CUSTOM_USD_PER_1K</code>, <code>OPENAI_WEB_SEARCH_USD_PER_1K</code>)
 or edit <code>src/websearch_bench/pricing.py</code>. Verify against the official
 pages before quoting:
 <a href="https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/">Azure OpenAI</a>,

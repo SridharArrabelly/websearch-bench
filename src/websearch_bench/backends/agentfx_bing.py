@@ -22,7 +22,8 @@ from websearch_bench.shared import (
     USER_COUNTRY,
     RunMetrics,
     Timer,
-    count_search_calls_in_agent_response,
+    count_tool_calls_in_agent_response,
+    count_web_search_calls_in_agent_response,
     print_metrics,
     usage_from_agent_framework,
 )
@@ -63,18 +64,20 @@ async def run() -> RunMetrics:
     console.print(f"\n[bold green]Agent:[/bold green] {result.text}")
 
     usage = usage_from_agent_framework(result)
-    search_calls = count_search_calls_in_agent_response(result)
+    web_search_calls = count_web_search_calls_in_agent_response(result)
+    tool_calls = count_tool_calls_in_agent_response(result)
     metrics = RunMetrics(
         backend=BACKEND_NAME,
         model=MODEL,
         input_tokens=usage.get("input_tokens"),
         output_tokens=usage.get("output_tokens"),
         total_tokens=usage.get("total_tokens"),
-        search_calls=search_calls,
+        web_search_calls=web_search_calls,
+        tool_calls=tool_calls,
         latency_s=round(t.elapsed, 2),
         answer_chars=len(result.text or ""),
         answer=result.text or "",
-        notes=None if search_calls is not None else "no messages returned",
+        notes=None if web_search_calls is not None else "no messages returned",
     )
     metrics.cost_usd = round(
         estimate_cost(
@@ -82,7 +85,7 @@ async def run() -> RunMetrics:
             model=metrics.model,
             input_tokens=metrics.input_tokens,
             output_tokens=metrics.output_tokens,
-            search_calls=metrics.search_calls if metrics.search_calls else 1,
+            web_search_calls=metrics.web_search_calls if metrics.web_search_calls else 1,
         ),
         4,
     )

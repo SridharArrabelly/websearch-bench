@@ -26,7 +26,8 @@ RESULTS_HTML = Path.cwd() / "results.html"
 # free text and belongs in the HTML report, not a spreadsheet cell.
 _CSV_COLUMNS = [
     "backend", "model", "input_tokens", "output_tokens", "total_tokens",
-    "search_calls", "latency_s", "cost_usd", "answer_chars", "notes",
+    "web_search_calls", "tool_calls", "latency_s", "cost_usd",
+    "answer_chars", "notes",
 ]
 
 
@@ -62,7 +63,7 @@ def render(results: list[RunMetrics]) -> None:
     table = Table(title=f"Web-search comparison — query: {SHARED_QUERY!r}")
     for col in [
         "backend", "model", "in_tok", "out_tok", "total_tok",
-        "search_calls", "latency", "cost", "answer", "notes",
+        "web_search", "tool_calls", "latency", "cost", "answer", "notes",
     ]:
         table.add_column(col)
     for r in results:

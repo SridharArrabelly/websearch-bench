@@ -26,7 +26,8 @@ from websearch_bench.shared import (
     USER_REGION,
     RunMetrics,
     Timer,
-    count_search_calls_in_openai_output,
+    count_tool_calls_in_openai_output,
+    count_web_search_calls_in_openai_output,
     print_metrics,
     usage_from_openai_response,
 )
@@ -88,7 +89,8 @@ async def run() -> RunMetrics:
         input_tokens=usage.get("input_tokens"),
         output_tokens=usage.get("output_tokens"),
         total_tokens=usage.get("total_tokens"),
-        search_calls=count_search_calls_in_openai_output(response),
+        web_search_calls=count_web_search_calls_in_openai_output(response),
+        tool_calls=count_tool_calls_in_openai_output(response),
         latency_s=round(t.elapsed, 2),
         answer_chars=len(answer),
         answer=answer,
@@ -99,7 +101,7 @@ async def run() -> RunMetrics:
             model=metrics.model,
             input_tokens=metrics.input_tokens,
             output_tokens=metrics.output_tokens,
-            search_calls=metrics.search_calls,
+            web_search_calls=metrics.web_search_calls,
         ),
         4,
     )

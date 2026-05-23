@@ -101,8 +101,10 @@ Minimum env vars per backend (set in `.env`):
 Optional everywhere:
 
 - `APPLICATIONINSIGHTS_CONNECTION_STRING` — tracing for the cached backend.
-- `BING_GROUNDING_USD_PER_CALL`, `BING_CUSTOM_USD_PER_CALL`,
-  `OPENAI_WEB_SEARCH_USD_PER_CALL` — override the placeholder pricing.
+- `BING_GROUNDING_USD_PER_1K`, `BING_CUSTOM_USD_PER_1K`,
+  `OPENAI_WEB_SEARCH_USD_PER_1K` — override the per-1,000-call pricing
+  (verified defaults: $35 / $35 / $10 — see [`pricing.py`](src/websearch_bench/pricing.py)
+  for source links).
 
 ## Run
 
@@ -138,8 +140,56 @@ uv run python -m websearch_bench.backends.agentfx_bing_cached
 uv run python -m websearch_bench.backends.openai_web_search
 ```
 
-Each prints the agent's answer plus a normalized usage block (tokens, search
-calls when surfaced, latency, estimated USD cost).
+Each prints the agent's answer plus a normalized usage block (tokens, web-search
+calls, total tool calls, latency, estimated USD cost).
+
+## Metrics & cost model
+
+Each run reports a normalized `RunMetrics` row:
+
+| Column | Meaning |
+| --- | --- |
+| `input_tokens` / `output_tokens` / `total_tokens` | Model usage as reported by the SDK (OpenAI `response.usage`, Foundry's mirror of it, or `agent_framework`'s `usage_details`). |
+| `web_search_calls` | Number of times **the model** invoked the web-search tool to answer your one question. This is what Bing / OpenAI bill against — the user only sends 1 query but the model may issue 0, 1, 2, … web searches per response. |
+| `tool_calls` | Number of **all** tool invocations (web_search, function tools, MCP tools, …). Equals `web_search_calls` in this bench because web_search is the only tool attached. |
+| `latency_s` | Wall-clock seconds from sending the request to receiving the final response. |
+| `cost_usd` | `model_token_cost + (web_search_calls / 1000) * vendor_price_per_1k` — see below. |
+| `answer_chars` | Length of the agent's final answer text. |
+
+Cost formula:
+
+```
+cost = (input_tokens  / 1000) * model_input_rate
+     + (output_tokens / 1000) * model_output_rate
+     + (web_search_calls / 1000) * tool_rate_per_1k
+```
+
+Default `tool_rate_per_1k` (verified mid-2025, override via env):
+
+| Backend | Tool rate | Source |
+| --- | --- | --- |
+| `foundry-bing`, `agentfx-bing`, `agentfx-bing-cached (miss)` | **$35 / 1,000 calls** | [Grounding with Bing](https://www.microsoft.com/bing/apis/grounding-pricing) |
+| `foundry-bing-custom` | **$35 / 1,000 calls** (new SKU; legacy $14 retired Aug 2025) | [Grounding with Bing Custom](https://www.microsoft.com/bing/apis/grounding-pricing) |
+| `openai-web-search` | **$10 / 1,000 calls** (all models) | [OpenAI pricing](https://openai.com/api/pricing/) |
+| `agentfx-bing-cached (hit)` | $0 — answer served from Redis, no Bing call | n/a |
+
+## Change the workload
+
+Every backend reads its workload from `src/websearch_bench/shared.py`. To
+benchmark a different query / model / domain / `search_context_size`, edit
+those module-level constants once and rerun `websearch-bench`.
+
+## Pricing
+
+`src/websearch_bench/pricing.py` ships with **verified defaults** for mid-2025
+(see the table in [Metrics & cost model](#metrics--cost-model) above for sources).
+Verify against the official pages before quoting a customer:
+
+- Azure OpenAI / Foundry model pricing: <https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/>
+- Grounding with Bing Search / Custom Search: <https://www.microsoft.com/bing/apis/grounding-pricing>
+- OpenAI Responses API + `web_search`: <https://openai.com/api/pricing/>
+
+Override per-1,000-call rates via env vars (see `.env.example`).
 
 ### Cache-only backend: extras
 
@@ -159,24 +209,6 @@ Start a local Redis if you don't already have one:
 ```powershell
 docker run --rm -p 6379:6379 redis:7
 ```
-
-## Change the workload
-
-Every backend reads its workload from `src/websearch_bench/shared.py`. To
-benchmark a different query / model / domain / `search_context_size`, edit
-those module-level constants once and rerun `websearch-bench`.
-
-## Pricing
-
-`src/websearch_bench/pricing.py` ships with **illustrative defaults only**. Verify
-against the official pages before quoting:
-
-- Azure OpenAI / Foundry model pricing: <https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/>
-- Grounding with Bing Search: <https://www.microsoft.com/bing/apis/grounding-pricing>
-- Grounding with Bing Custom Search: <https://www.microsoft.com/bing/apis/pricing>
-- OpenAI Responses API + `web_search`: <https://openai.com/api/pricing/>
-
-Override per-call charges via env vars (see `.env.example`).
 
 ## Troubleshooting
 

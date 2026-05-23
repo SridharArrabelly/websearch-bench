@@ -63,7 +63,13 @@ class RunMetrics:
     input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
-    search_calls: int | None = None
+    # Number of times the model invoked the web-search tool. This is what
+    # Bing / OpenAI bill against ("transactions" / "calls").
+    web_search_calls: int | None = None
+    # Total tool invocations across ALL tools (web_search, function calls,
+    # MCP, code interpreter, ...). For the current setup this equals
+    # ``web_search_calls`` because we only attach web_search.
+    tool_calls: int | None = None
     latency_s: float | None = None
     cost_usd: float | None = None
     answer_chars: int | None = None
@@ -87,7 +93,8 @@ class RunMetrics:
             fmt(self.input_tokens),
             fmt(self.output_tokens),
             fmt(self.total_tokens),
-            fmt(self.search_calls),
+            fmt(self.web_search_calls),
+            fmt(self.tool_calls),
             fmt(self.latency_s, " s"),
             fmt(self.cost_usd, " USD"),
             fmt(self.answer_chars, " chars"),
@@ -141,19 +148,62 @@ def usage_from_openai_response(response: Any) -> dict[str, int | None]:
 
 
 def count_search_calls_in_openai_output(response: Any) -> int:
-    """Count web_search_call items in an OpenAI/Foundry Responses object."""
+    """Backwards-compatible alias for ``count_web_search_calls_in_openai_output``."""
+    return count_web_search_calls_in_openai_output(response)
+
+
+def count_web_search_calls_in_openai_output(response: Any) -> int:
+    """Count ``web_search_call`` items in an OpenAI/Foundry Responses object."""
     output = getattr(response, "output", None) or []
     return sum(1 for item in output if getattr(item, "type", None) == "web_search_call")
 
 
+# Item types in the OpenAI/Foundry Responses ``output`` array that represent
+# a tool invocation. Any item whose ``type`` ends in ``_call`` is a tool call;
+# the explicit list documents what we currently know about.
+_OPENAI_TOOL_CALL_TYPES = {
+    "web_search_call",
+    "file_search_call",
+    "code_interpreter_call",
+    "image_generation_call",
+    "computer_call",
+    "function_call",
+    "local_shell_call",
+    "mcp_call",
+    "mcp_list_tools",
+    "mcp_approval_request",
+}
+
+
+def count_tool_calls_in_openai_output(response: Any) -> int:
+    """Count *all* tool invocations in an OpenAI/Foundry Responses object.
+
+    For the current bench this equals ``count_web_search_calls_in_openai_output``
+    because web_search is the only tool we attach. The two diverge once you
+    add function/MCP/code-interpreter tools.
+    """
+    output = getattr(response, "output", None) or []
+    count = 0
+    for item in output:
+        t = getattr(item, "type", None) or ""
+        if t in _OPENAI_TOOL_CALL_TYPES or t.endswith("_call"):
+            count += 1
+    return count
+
+
 def count_search_calls_in_agent_response(result: Any) -> int | None:
-    """Count tool invocations the agent_framework agent made to web_search.
+    """Backwards-compatible alias for ``count_web_search_calls_in_agent_response``."""
+    return count_web_search_calls_in_agent_response(result)
+
+
+def count_web_search_calls_in_agent_response(result: Any) -> int | None:
+    """Count web-search tool invocations in an agent_framework ``AgentResponse``.
 
     Walks ``result.messages[*].contents[*]`` and counts ``Content`` items whose
-    ``type`` is ``"search_tool_call"`` (Bing/web search) or a function/MCP
-    call that targets a search tool by name. Returns ``None`` only if the
-    response has no messages at all (so the caller can distinguish "no data"
-    from "the model chose not to search").
+    ``type`` is ``"search_tool_call"`` (Bing / web search). Generic
+    ``function_call`` contents whose ``name`` contains "search" are also
+    counted to handle providers that expose web search via a function tool.
+    Returns ``None`` if the response has no messages at all.
     """
     messages = getattr(result, "messages", None)
     if not messages:
@@ -165,11 +215,39 @@ def count_search_calls_in_agent_response(result: Any) -> int | None:
             if ctype == "search_tool_call":
                 count += 1
             elif ctype == "function_call":
-                # Some providers surface the web search as a generic function call
-                # named "web_search" / "web_search_preview" / "bing_search".
                 name = (getattr(content, "name", "") or "").lower()
                 if "search" in name:
                     count += 1
+    return count
+
+
+# agent_framework Content types that represent a tool invocation (anything
+# that triggered remote/sdk work). Used for the generic ``tool_calls`` metric.
+_AF_TOOL_CALL_TYPES = {
+    "function_call",
+    "search_tool_call",
+    "code_interpreter_tool_call",
+    "image_generation_tool_call",
+    "mcp_server_tool_call",
+    "shell_tool_call",
+}
+
+
+def count_tool_calls_in_agent_response(result: Any) -> int | None:
+    """Count *all* tool invocations across all messages of an AF response.
+
+    Equals ``count_web_search_calls_in_agent_response`` when web_search is the
+    only attached tool; will diverge once you add function/MCP tools.
+    """
+    messages = getattr(result, "messages", None)
+    if not messages:
+        return None
+    count = 0
+    for msg in messages:
+        for content in getattr(msg, "contents", None) or []:
+            ctype = getattr(content, "type", None) or ""
+            if ctype in _AF_TOOL_CALL_TYPES or ctype.endswith("_tool_call"):
+                count += 1
     return count
 
 
