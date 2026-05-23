@@ -311,18 +311,16 @@ def count_search_calls_in_openai_output(response: Any) -> int:
 
 
 def count_web_search_calls_in_openai_output(response: Any) -> int:
-    """Count search-tool call items in an OpenAI/Foundry Responses object.
+    """Count ``web_search_call`` items in an OpenAI/Foundry Responses object.
 
-    Recognizes both the OpenAI Responses ``web_search_call`` items (Foundry's
-    ``WebSearchTool``) and the Foundry-native ``bing_grounding_call`` items
-    emitted by ``BingGroundingTool``.
+    This is the OpenAI-style ``web_search`` tool only (Foundry's
+    ``WebSearchTool`` / OpenAI Responses native ``web_search``). The legacy
+    Foundry ``BingGroundingTool`` is **not** a web_search call — its items
+    use ``type="bing_grounding_call"`` and are counted by
+    :func:`count_bing_queries_in_openai_output` instead.
     """
     output = getattr(response, "output", None) or []
-    return sum(
-        1
-        for item in output
-        if getattr(item, "type", None) in ("web_search_call", "bing_grounding_call")
-    )
+    return sum(1 for item in output if getattr(item, "type", None) == "web_search_call")
 
 
 def count_bing_queries_in_openai_output(response: Any) -> int | None:
@@ -381,7 +379,16 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
     # A. Sum the per-call query/result counts.
     sum_queries = 0
     for item in output:
-        if getattr(item, "type", None) not in ("web_search_call", "bing_grounding_call"):
+        item_type = getattr(item, "type", None)
+        if item_type not in ("web_search_call", "bing_grounding_call"):
+            continue
+        # BingGroundingTool: each bing_grounding_call item == exactly one Bing
+        # API call regardless of how many strings appear in action.queries
+        # (verified against App Insights: 1 remote_functions.bing_grounding
+        # dependency span per item). Don't sum action.queries here or we
+        # inflate the billable count.
+        if item_type == "bing_grounding_call":
+            sum_queries += 1
             continue
         action = getattr(item, "action", None)
         sub = 0
@@ -390,7 +397,15 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
         sum_queries += sub if sub else 1
 
     # B. url_citation annotations on the assistant message (fallback signal
-    # for when the SDK collapses the fan-out).
+    # for when the WebSearchTool SDK collapses fan-out). Skip this for
+    # bing_grounding-only responses: citation count there reflects sources
+    # cited from a single Bing call, not separate Bing transactions.
+    has_web_search_call = any(
+        getattr(i, "type", None) == "web_search_call" for i in output
+    )
+    if not has_web_search_call:
+        return sum_queries
+
     citation_count = 0
     for item in output:
         if getattr(item, "type", None) != "message":
