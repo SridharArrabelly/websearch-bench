@@ -30,7 +30,7 @@ from websearch_bench.shared import (
     usage_from_openai_response,
 )
 
-BACKEND_NAME = "foundry-bing-custom"
+BACKEND_NAME = "foundry-ws-bingcustom"
 REQUIRED_ENV: tuple[str, ...] = (
     "PROJECT_ENDPOINT",
     "BING_CUSTOM_SEARCH_CONNECTION_ID",

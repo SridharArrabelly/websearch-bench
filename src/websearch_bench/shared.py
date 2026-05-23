@@ -246,8 +246,8 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
     """Estimate the number of actual Bing search queries issued.
 
     .. warning::
-       For the Foundry-hosted ``WebSearchTool`` (foundry-bing / foundry-bing-
-       custom) this number is a **lower bound**. Foundry's grounding pipeline
+       For the Foundry-hosted ``WebSearchTool`` (foundry-ws-bing / foundry-ws-
+       bingcustom) this number is a **lower bound**. Foundry's grounding pipeline
        fans the tool call out into multiple Bing transactions server-side and
        only exposes a summarized ``action.queries`` list on each
        ``web_search_call`` item — the App Insights ``chat`` span on the
@@ -265,7 +265,7 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
     list of queries the *model* asked for, which the tool may then expand.
     The bench reports the **sum** across web_search_call items.
 
-    Example real dump (foundry-bing, single user prompt):
+    Example real dump (foundry-ws-bing, single user prompt):
         output[0].type = "web_search_call"   action.queries = ["calculator: 1+1"]
         output[1].type = "web_search_call"   action.queries = ["tax tables …", "individual income tax …"]
         => 3 model-requested queries (App Insights showed 23 actual Bing hits)

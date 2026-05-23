@@ -24,13 +24,13 @@ from websearch_bench.shared import (
     usage_from_openai_response,
 )
 
-BACKEND_NAME = "openai-web-search"
+BACKEND_NAME = "openai-ws"
 REQUIRED_ENV: tuple[str, ...] = ("OPENAI_API_KEY",)
 # This backend is opt-in because it bills against an OpenAI subscription
 # (web_search is $10/1k calls + standard token rates). Most contributors only
 # care about the Azure/Foundry surfaces, so we skip it unless explicitly
 # enabled.
-_ENABLE_VAR = "ENABLE_OPENAI_WEB_SEARCH"
+_ENABLE_VAR = "ENABLE_OPENAI_WS"
 
 console = Console()
 

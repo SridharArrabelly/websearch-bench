@@ -38,7 +38,7 @@ def _missing(required: tuple[str, ...]) -> list[str]:
 
 
 def _enable_var_for(label: str) -> str:
-    """ENABLE_FOUNDRY_BING_CUSTOM for label 'foundry-bing-custom', etc."""
+    """ENABLE_FOUNDRY_WS_BINGCUSTOM for label 'foundry-ws-bingcustom', etc."""
     return "ENABLE_" + label.upper().replace("-", "_")
 
 

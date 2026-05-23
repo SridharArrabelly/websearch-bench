@@ -33,7 +33,7 @@ from websearch_bench.shared import (
     usage_from_openai_response,
 )
 
-BACKEND_NAME = "foundry-bing"
+BACKEND_NAME = "foundry-ws-bing"
 REQUIRED_ENV: tuple[str, ...] = ("PROJECT_ENDPOINT",)
 
 console = Console()

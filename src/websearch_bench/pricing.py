@@ -118,11 +118,11 @@ def tool_cost(backend: str, web_search_calls: int | None) -> float:
     Bing transactions.
     """
     calls = web_search_calls or 0
-    if backend.startswith("foundry-bing-custom"):
+    if backend.startswith("foundry-ws-bingcustom"):
         return calls * BING_CUSTOM_USD_PER_1K / 1000.0
-    if backend.startswith("foundry-bing") or backend.startswith("agentfx"):
+    if backend.startswith("foundry-ws-bing") or backend.startswith("agentfx"):
         return calls * BING_GROUNDING_USD_PER_1K / 1000.0
-    if backend.startswith("openai-web-search"):
+    if backend.startswith("openai-ws"):
         return calls * OPENAI_WEB_SEARCH_USD_PER_1K / 1000.0
     return 0.0
 
