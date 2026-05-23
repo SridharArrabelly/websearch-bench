@@ -174,11 +174,15 @@ def _setup_tracing() -> None:
         return
     try:
         from azure.monitor.opentelemetry import configure_azure_monitor
-        from agent_framework.observability import enable_instrumentation
+        from agent_framework.observability import create_resource, enable_instrumentation
     except ImportError:
         return
     try:
-        configure_azure_monitor()
+        configure_azure_monitor(
+            connection_string=os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"],
+            resource=create_resource(),
+            enable_live_metrics=True,
+        )
         enable_instrumentation(enable_sensitive_data=True)
     except Exception as exc:
         console.print(f"[yellow]Tracing setup skipped: {exc}[/yellow]")
