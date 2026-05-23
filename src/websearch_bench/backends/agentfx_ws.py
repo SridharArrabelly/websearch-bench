@@ -8,10 +8,10 @@ import os
 
 from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient
-from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
 from rich.console import Console
 
+from websearch_bench.auth import make_credential
 from websearch_bench.pricing import estimate_cost
 from websearch_bench.appinsights import find_response_id
 from websearch_bench.shared import (
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 async def run() -> RunMetrics:
     load_dotenv(override=True)
 
-    async with DefaultAzureCredential() as cred:
+    async with make_credential() as cred:
         client = FoundryChatClient(
             project_endpoint=os.environ["PROJECT_ENDPOINT"],
             credential=cred,

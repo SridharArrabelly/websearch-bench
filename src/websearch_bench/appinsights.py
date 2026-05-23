@@ -22,7 +22,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import aiohttp
-from azure.identity.aio import DefaultAzureCredential
+
+from websearch_bench.auth import make_credential
 
 
 _APPID_RE = re.compile(r"ApplicationId=([0-9a-fA-F-]+)")
@@ -110,7 +111,7 @@ dependencies
     url = f"{_APPINSIGHTS_BASE}/{app_id}/query"
     deadline = time.monotonic() + timeout_s
 
-    async with DefaultAzureCredential() as credential:
+    async with make_credential() as credential:
         token = (await credential.get_token(_APPINSIGHTS_SCOPE)).token
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 

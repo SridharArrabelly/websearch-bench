@@ -11,10 +11,10 @@ from azure.ai.projects.models import (
     WebSearchConfiguration,
     WebSearchTool,
 )
-from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
 from rich.console import Console
 
+from websearch_bench.auth import make_credential
 from websearch_bench.pricing import estimate_cost
 from websearch_bench.shared import (
     MODEL,
@@ -47,7 +47,7 @@ async def run() -> RunMetrics:
     instance_name = os.environ["BING_CUSTOM_SEARCH_INSTANCE_NAME"]
 
     async with (
-        DefaultAzureCredential() as credential,
+        make_credential() as credential,
         AIProjectClient(endpoint=project_endpoint, credential=credential) as project,
     ):
         openai = project.get_openai_client()

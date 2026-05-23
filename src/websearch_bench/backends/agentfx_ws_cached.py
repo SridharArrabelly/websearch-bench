@@ -25,11 +25,11 @@ from dataclasses import dataclass
 import redis.asyncio as redis
 from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient
-from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.logging import RichHandler
 
+from websearch_bench.auth import make_credential
 from websearch_bench.pricing import estimate_cost
 from websearch_bench.appinsights import find_response_id
 from websearch_bench.shared import (
@@ -173,7 +173,7 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
                 print_metrics(metrics, console)
                 return metrics
 
-        async with DefaultAzureCredential() as credential:
+        async with make_credential() as credential:
             client = FoundryChatClient(
                 project_endpoint=settings.project_endpoint,
                 credential=credential,
