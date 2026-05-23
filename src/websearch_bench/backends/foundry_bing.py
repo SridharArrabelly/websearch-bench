@@ -101,6 +101,7 @@ async def run() -> RunMetrics:
         latency_s=round(t.elapsed, 2),
         answer_chars=len(answer),
         answer=answer,
+        notes="bing_queries from response is lower bound — server fan-out hidden; see App Insights",
     )
     metrics.cost_usd = round(
         estimate_cost(

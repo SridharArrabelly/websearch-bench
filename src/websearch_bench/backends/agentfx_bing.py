@@ -85,7 +85,7 @@ async def run() -> RunMetrics:
         latency_s=round(t.elapsed, 2),
         answer_chars=len(result.text or ""),
         answer=result.text or "",
-        notes=None if web_search_calls is not None else "no messages returned",
+        notes="bing_queries lower bound — Foundry server fan-out hidden; see App Insights" if web_search_calls else "no messages returned",
     )
     metrics.cost_usd = round(
         estimate_cost(

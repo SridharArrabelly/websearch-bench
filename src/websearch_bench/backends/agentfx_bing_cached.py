@@ -207,7 +207,7 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
             latency_s=round(t.elapsed, 2),
             answer_chars=len(result.text or ""),
             answer=result.text or "",
-            notes="cache miss — Bing called, result cached",
+            notes="cache miss — Bing called, result cached (bing_queries lower bound; see App Insights)",
         )
         metrics.cost_usd = round(
             estimate_cost(

@@ -151,8 +151,8 @@ Each run reports a normalized `RunMetrics` row:
 | --- | --- |
 | `input_tokens` / `output_tokens` / `total_tokens` | Model usage as reported by the SDK (OpenAI `response.usage`, Foundry's mirror of it, or `agent_framework`'s `usage_details`). |
 | `cached_input_tokens` | Portion of `input_tokens` served from Azure OpenAI prompt caching. Billed at the **cached_input** rate (≈10× cheaper). Same number surfaced on the Foundry App Insights span as `gen_ai.usage.cached_tokens`. |
-| `web_search_calls` | Number of times **the model** invoked the web-search tool. The model decides 0..N searches per response. |
-| `bing_queries` | Estimated **actual Bing transactions** issued behind the scenes. For Foundry's server-side `web.run` tool, one model-level `web_search_call` can fan out to many Bing queries — App Insights typically shows 10-15 `tool_call_response` messages flowing back from a single `execute_tool web.run` span. This is the number we bill against. Falls back to `web_search_calls` if the SDK doesn't expose the fan-out. |
+| `web_search_calls` | Number of `web_search_call` items in the response — i.e. distinct tool invocations the model emitted. |
+| `bing_queries` | Sum of `action.queries` lengths across `web_search_call` items — the queries the **model asked the tool to run**. <br/>⚠️ **For Foundry-hosted backends (`foundry-bing`, `foundry-bing-custom`, `agentfx-bing*`) this is a lower bound.** Foundry's `web.run` extension expands each query into multiple Bing transactions server-side and only exposes the summarized list in `action.queries`. Ground truth is in App Insights: count the `tool_call_response` messages on the `chat` span (one per Bing hit). Example observed: a response with 2 `web_search_call` items and 3 entries in `action.queries` drove **23** `tool_call_response` messages in App Insights. For `openai-web-search` (no server-side fan-out) the number is accurate. |
 | `tool_calls` | Total tool invocations (web_search + function + MCP + code interpreter, …). Equals `web_search_calls` in this bench because web_search is the only attached tool. |
 | `latency_s` | Wall-clock seconds from sending the request to receiving the final response. |
 | `cost_usd` | See cost formula below. |
@@ -171,13 +171,17 @@ tool_$    = ((bing_queries OR web_search_calls) / 1000) * tool_rate_per_1k
 cost      = tokens_$ + tool_$
 ```
 
-> **Fan-out matters.** Foundry's `web.run` extension is one billable "tool
-> execution" from the model's POV but can dispatch many parallel Bing queries
-> internally and merge the results into the next chat turn. That's why a single
-> Foundry web_search_call can balloon input tokens to 10k+ on the next turn and
-> why `bing_queries` (not `web_search_calls`) is the right field to bill on.
-> The fan-out count is **variable per run** — the same question can produce
-> 10, 14, 17, … sub-queries depending on what the model decides.
+> **Foundry server-side fan-out is hidden.** Foundry's `web.run` extension is
+> one billable "tool execution" from the model's POV but dispatches multiple
+> Bing transactions internally and merges the results back as separate
+> `tool_call_response` messages on the next chat turn (that's why input tokens
+> balloon to 10k+ after a single web_search_call). The Responses API does
+> **not** expose the per-query fan-out — only a summary in `action.queries`.
+> So `cost_usd` for the Foundry backends is a **lower bound on the tool
+> portion**; reconcile against the Foundry App Insights chat span for exact
+> Bing billing. Model-token cost is exact (it comes from `usage`). The
+> fan-out count is also **variable per run** — the same question may produce
+> 10, 14, 17, 23 … Bing hits depending on what the tool decides.
 
 ### Inspecting the raw response
 

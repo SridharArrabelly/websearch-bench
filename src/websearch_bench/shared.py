@@ -246,16 +246,30 @@ def count_web_search_calls_in_openai_output(response: Any) -> int:
 def count_bing_queries_in_openai_output(response: Any) -> int | None:
     """Estimate the number of actual Bing search queries issued.
 
+    .. warning::
+       For the Foundry-hosted ``WebSearchTool`` (foundry-bing / foundry-bing-
+       custom) this number is a **lower bound**. Foundry's grounding pipeline
+       fans the tool call out into multiple Bing transactions server-side and
+       only exposes a summarized ``action.queries`` list on each
+       ``web_search_call`` item — the App Insights ``chat`` span on the
+       Foundry account is the only ground-truth source for true billable Bing
+       calls (one ``tool_call_response`` message per Bing transaction).
+       Example: a response containing 2 web_search_call items with 3 entries
+       in their ``action.queries`` arrays was observed driving **23**
+       ``tool_call_response`` messages in App Insights. Use this column as a
+       directional signal; reconcile cost against the Foundry/App Insights
+       chat span for exact billing.
+
     Ground truth (from a real Foundry response dump): each ``web_search_call``
-    item in ``response.output`` carries an ``action.queries`` list — Bing is
-    billed once per entry in that list (one query = one transaction). One
-    response can contain N web_search_call items, each with M queries; the
-    actual Bing bill is the **sum**.
+    item in ``response.output`` carries an ``action.queries`` list. Bing is
+    billed once per query the tool actually issues; ``action.queries`` is the
+    list of queries the *model* asked for, which the tool may then expand.
+    The bench reports the **sum** across web_search_call items.
 
     Example real dump (foundry-bing, single user prompt):
         output[0].type = "web_search_call"   action.queries = ["calculator: 1+1"]
         output[1].type = "web_search_call"   action.queries = ["tax tables …", "individual income tax …"]
-        => 3 Bing queries (1 + 2)
+        => 3 model-requested queries (App Insights showed 23 actual Bing hits)
 
     Strategy: walk every ``web_search_call`` and sum the largest list-shaped
     payload we can find (``queries`` / ``sub_queries`` / ``search_queries`` /
