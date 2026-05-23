@@ -189,7 +189,13 @@ def find_response_id(obj: Any, *, depth: int = 6) -> str | None:
 
 
 
-async def reconcile_metrics(metrics: Any, response_id: str | None, *, console: Any = None) -> Any:
+async def reconcile_metrics(
+    metrics: Any,
+    response_id: str | None,
+    *,
+    console: Any = None,
+    timeout_s: float = 120.0,
+) -> Any:
     """Pull the real tool_msgs count from App Insights and patch ``metrics``.
 
     For Foundry-hosted backends the Responses API hides the per-Bing-query
@@ -207,7 +213,7 @@ async def reconcile_metrics(metrics: Any, response_id: str | None, *, console: A
             f"[dim]Reconciling bing_queries against App Insights for {response_id} …[/dim]"
         )
     try:
-        facts = await fetch_chat_span(response_id)
+        facts = await fetch_chat_span(response_id, timeout_s=timeout_s)
     except Exception as exc:  # noqa: BLE001
         if console is not None:
             console.print(f"[yellow]App Insights reconcile skipped: {exc}[/yellow]")

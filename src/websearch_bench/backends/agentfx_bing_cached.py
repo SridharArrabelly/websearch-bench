@@ -31,7 +31,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from websearch_bench.pricing import estimate_cost
-from websearch_bench.appinsights import find_response_id, reconcile_metrics
+from websearch_bench.appinsights import find_response_id
 from websearch_bench.shared import (
     ALLOWED_DOMAINS,
     MODEL,
@@ -222,7 +222,7 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
             ),
             4,
         )
-        await reconcile_metrics(metrics, find_response_id(result), console=console)
+        metrics.response_id = find_response_id(result)
         print_metrics(metrics, console)
         return metrics
     finally:

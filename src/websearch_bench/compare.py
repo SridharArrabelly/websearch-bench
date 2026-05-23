@@ -15,6 +15,7 @@ from rich.console import Console
 from rich.table import Table
 
 from websearch_bench.backends import discover
+from websearch_bench.appinsights import reconcile_metrics
 from websearch_bench.report import write_html
 from websearch_bench.shared import MODEL, SHARED_QUERY, RunMetrics
 
@@ -90,9 +91,31 @@ def write_csv(results: list[RunMetrics], path: Path) -> Path:
     return path.resolve()
 
 
+async def reconcile_all(results: list[RunMetrics]) -> None:
+    """After all backends have run, batch-reconcile against App Insights.
+
+    Telemetry has a 1-5 min ingestion lag, so reconciling inline (in each
+    backend's run()) usually times out for everything except the first
+    backend. Running a single pass at the end gives the earlier backends
+    plenty of time to ingest while the later ones execute. We still poll
+    each id for up to 3 min in case App Insights is slow.
+    """
+    targets = [r for r in results if getattr(r, "response_id", None)]
+    if not targets:
+        return
+    console.rule("[bold]Reconciling against App Insights")
+    for r in targets:
+        console.print(f"[dim]-> {r.backend}: {r.response_id}[/dim]")
+        await reconcile_metrics(r, r.response_id, console=console, timeout_s=180)
+        console.print(
+            f"[dim]   bing_queries={r.bing_queries}  cost=${r.cost_usd}  notes={r.notes}[/dim]"
+        )
+
+
 async def amain() -> None:
     load_dotenv(override=True)
     results = await run_all()
+    await reconcile_all(results)
     console.rule("[bold]Summary")
     render(results)
 

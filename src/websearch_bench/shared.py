@@ -86,6 +86,10 @@ class RunMetrics:
     notes: str | None = None
     # Full answer text — included in the HTML report, excluded from CSV.
     answer: str | None = None
+    # Foundry/OpenAI Responses API ``resp_…`` id (when available). Used by
+    # ``compare.py`` to do a deferred App Insights reconcile after all
+    # backends have run, giving telemetry time to ingest.
+    response_id: str | None = None
 
     def as_row(self) -> list[str]:
         """Cells for the terminal rich.Table — does NOT include `answer`."""
