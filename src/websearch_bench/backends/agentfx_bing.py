@@ -23,6 +23,7 @@ from websearch_bench.shared import (
     RunMetrics,
     Timer,
     count_bing_queries_in_agent_response,
+    debug_dump,
     count_tool_calls_in_agent_response,
     count_web_search_calls_in_agent_response,
     print_metrics,
@@ -64,6 +65,9 @@ async def run() -> RunMetrics:
 
     console.print(f"\n[bold green]Agent:[/bold green] {result.text}")
 
+    _dump = debug_dump(BACKEND_NAME, result)
+    if _dump:
+        console.print(f"[dim]Debug dump: {_dump}[/dim]")
     usage = usage_from_agent_framework(result)
     web_search_calls = count_web_search_calls_in_agent_response(result)
     bing_queries = count_bing_queries_in_agent_response(result)

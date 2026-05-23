@@ -176,6 +176,23 @@ cost      = tokens_$ + tool_$
 > internally and merge the results into the next chat turn. That's why a single
 > Foundry web_search_call can balloon input tokens to 10k+ on the next turn and
 > why `bing_queries` (not `web_search_calls`) is the right field to bill on.
+> The fan-out count is **variable per run** — the same question can produce
+> 10, 14, 17, … sub-queries depending on what the model decides.
+
+### Inspecting the raw response
+
+To dump the raw SDK response (or `AgentResponse`) to disk for any run, set:
+
+```powershell
+$env:WEBSEARCH_BENCH_DEBUG="1"     # writes ./debug/<backend>-<timestamp>.json
+uv run websearch-bench
+```
+
+Open the JSON to verify how the SDK reports `web_search_call` items and their
+fan-out. Useful when the `bing_queries` column doesn't match the count you see
+on the Foundry App Insights `execute_tool web.run` span — open a real dump and
+extend `count_bing_queries_in_openai_output` in `shared.py` with the field
+names you find.
 
 Default `tool_rate_per_1k` (verified mid-2025, override via env):
 

@@ -18,6 +18,7 @@ from websearch_bench.shared import (
     RunMetrics,
     Timer,
     count_bing_queries_in_openai_output,
+    debug_dump,
     count_tool_calls_in_openai_output,
     count_web_search_calls_in_openai_output,
     print_metrics,
@@ -65,6 +66,9 @@ async def run() -> RunMetrics:
                 for s in sources:
                     console.print(f"- {getattr(s, 'url', s)}")
 
+    _dump = debug_dump(BACKEND_NAME, response)
+    if _dump:
+        console.print(f"[dim]Debug dump: {_dump}[/dim]")
     usage = usage_from_openai_response(response)
     answer = response.output_text or ""
     metrics = RunMetrics(

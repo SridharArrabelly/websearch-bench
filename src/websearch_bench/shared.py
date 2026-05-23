@@ -139,6 +139,58 @@ class Timer:
 
 
 # ---------------------------------------------------------------------------
+# Debug dump — write a raw response payload to disk for offline inspection.
+# Enable with WEBSEARCH_BENCH_DEBUG=1 (or set DEBUG_DIR explicitly).
+# ---------------------------------------------------------------------------
+
+
+def debug_dump(backend: str, payload: Any) -> str | None:
+    """Dump a backend response to ``./debug/<backend>-<ts>.json`` when enabled.
+
+    Returns the file path it wrote, or ``None`` if dumping is disabled or the
+    payload couldn't be serialized. We attempt ``.model_dump()`` first (pydantic
+    Responses object), then fall back to ``vars()`` or ``str()``.
+    """
+    if not (os.getenv("WEBSEARCH_BENCH_DEBUG") or os.getenv("DEBUG_DIR")):
+        return None
+    import json
+    from pathlib import Path
+
+    debug_dir = Path(os.getenv("DEBUG_DIR", "debug")).resolve()
+    debug_dir.mkdir(parents=True, exist_ok=True)
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    path = debug_dir / f"{backend}-{ts}.json"
+
+    def _serialize(obj: Any) -> Any:
+        if hasattr(obj, "model_dump"):
+            try:
+                return obj.model_dump()
+            except Exception:
+                pass
+        if hasattr(obj, "__dict__"):
+            try:
+                return {k: _serialize(v) for k, v in vars(obj).items() if not k.startswith("_")}
+            except Exception:
+                pass
+        if isinstance(obj, (list, tuple)):
+            return [_serialize(v) for v in obj]
+        if isinstance(obj, dict):
+            return {k: _serialize(v) for k, v in obj.items()}
+        if isinstance(obj, (str, int, float, bool)) or obj is None:
+            return obj
+        try:
+            return str(obj)
+        except Exception:
+            return None
+
+    try:
+        path.write_text(json.dumps(_serialize(payload), indent=2, default=str), encoding="utf-8")
+        return str(path)
+    except Exception:
+        return None
+
+
+# ---------------------------------------------------------------------------
 # Usage extraction helpers
 # ---------------------------------------------------------------------------
 
@@ -191,40 +243,42 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
 
     Foundry's server-side ``web.run`` tool can fan out one model-level
     ``web_search_call`` into many Bing transactions (App Insights shows e.g.
-    14 tool_call_response messages flowing back from a single web.run span).
+    10-20 ``tool_call_response`` messages flowing back from a single
+    ``execute_tool web.run`` span — the count varies per run).
 
-    We approximate this by looking for sub-query lists on each web_search_call
-    item — vendors expose this under different keys (``queries``, ``sub_queries``,
-    ``action.queries``, ``results``). When none of those are present we fall
-    back to the model-level call count.
-
-    Returns None if the response has no output array at all.
+    Strategy:
+    1.  Count ``web_search_call`` items in ``response.output``.
+    2.  For each such item, look for a list of sub-queries / sources / results
+        on either the item itself or its ``action`` payload. Known field
+        names across vendors: ``queries``, ``sub_queries``, ``search_queries``,
+        ``results``, ``sources``, ``citations``, ``search_results``.
+    3.  Sum the per-item sub-counts. If an item has no sub-list, count it as 1.
+    4.  Returns ``None`` if the response has no output array at all.
     """
     output = getattr(response, "output", None)
     if output is None:
         return None
+
+    list_attrs = (
+        "queries", "sub_queries", "search_queries",
+        "results", "sources", "citations", "search_results",
+    )
+
+    def _list_len(holder: Any, attr: str) -> int:
+        if holder is None:
+            return 0
+        val = holder.get(attr) if isinstance(holder, dict) else getattr(holder, attr, None)
+        return len(val) if isinstance(val, list) else 0
+
     total = 0
-    found_subcount = False
     for item in output:
         if getattr(item, "type", None) != "web_search_call":
             continue
-        sub = 0
-        for attr in ("queries", "sub_queries", "search_queries", "results"):
-            val = getattr(item, attr, None)
-            if isinstance(val, list) and val:
-                sub = max(sub, len(val))
-                found_subcount = True
         action = getattr(item, "action", None)
-        if action is not None:
-            for attr in ("queries", "sub_queries", "search_queries"):
-                val = getattr(action, attr, None) if not isinstance(action, dict) else action.get(attr)
-                if isinstance(val, list) and val:
-                    sub = max(sub, len(val))
-                    found_subcount = True
+        sub = 0
+        for attr in list_attrs:
+            sub = max(sub, _list_len(item, attr), _list_len(action, attr))
         total += sub if sub else 1
-    if not found_subcount:
-        # No fan-out signal exposed by the SDK — fall back to call count.
-        return count_web_search_calls_in_openai_output(response)
     return total
 
 

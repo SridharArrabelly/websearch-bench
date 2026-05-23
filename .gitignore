@@ -6,6 +6,7 @@ __pycache__/
 .cache/
 results.csv
 results.html
+debug/
 *.egg-info/
 build/
 dist/
