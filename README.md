@@ -38,7 +38,9 @@ foundry-websearch-tool/
         ├── __main__.py                  # python -m websearch_bench  → compare
         ├── shared.py                    # query, model, instructions, RunMetrics
         ├── pricing.py                   # USD constants + estimate_cost()
-        ├── compare.py                   # harness — runs all backends, writes results.csv
+        ├── auth.py                      # make_credential() — narrowed DefaultAzureCredential
+        ├── appinsights.py               # fetch_chat_span() + reconcile_metrics()
+        ├── compare.py                   # harness — runs all backends, writes results.csv/html
         └── backends/
             ├── __init__.py              # registry of backends
             ├── foundry_ws_bing.py
@@ -119,12 +121,18 @@ the upper-case backend label with dashes turned into underscores:
 
 Optional everywhere:
 
-- `APPLICATIONINSIGHTS_CONNECTION_STRING` — used for **two** things: tracing for
-  the cached backend, **and** post-run reconciliation of `bing_queries` against
-  the chat span (the only place Foundry's true server-side fan-out is visible —
-  see [Metrics & cost model](#metrics--cost-model)). Your identity needs the
-  **Monitoring Reader** or **Log Analytics Reader** role on the App Insights
-  resource for the reconciler to work.
+- `APPLICATIONINSIGHTS_CONNECTION_STRING` — used for **two** things: distributed
+  tracing for **every agent_framework backend** (`agentfx-bing`,
+  `agentfx-bing-cached`) via `azure.monitor.opentelemetry.configure_azure_monitor`
+  + `agent_framework.observability.enable_instrumentation(enable_sensitive_data=True)`,
+  **and** post-run reconciliation of `bing_queries` against the chat span (the
+  only place Foundry's true server-side fan-out is visible — see
+  [Metrics & cost model](#metrics--cost-model)). The harness also auto-sets
+  `AZURE_EXPERIMENTAL_ENABLE_GENAI_TRACING=true` +
+  `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true` so chat spans carry
+  the full `gen_ai.*` attributes. Your identity needs the **Monitoring Reader**
+  or **Log Analytics Reader** role on the App Insights resource for the
+  reconciler to work.
 - `BING_GROUNDING_USD_PER_1K`, `BING_CUSTOM_USD_PER_1K`,
   `OPENAI_WEB_SEARCH_USD_PER_1K` — override the per-1,000-call pricing
   (verified defaults: $35 / $35 / $10 — see [`pricing.py`](src/websearch_bench/pricing.py)
@@ -176,7 +184,7 @@ Each run reports a normalized `RunMetrics` row:
 | `input_tokens` / `output_tokens` / `total_tokens` | Model usage as reported by the SDK (OpenAI `response.usage`, Foundry's mirror of it, or `agent_framework`'s `usage_details`). |
 | `cached_input_tokens` | Portion of `input_tokens` served from Azure OpenAI prompt caching. Billed at the **cached_input** rate (≈10× cheaper). Same number surfaced on the Foundry App Insights span as `gen_ai.usage.cached_tokens`. |
 | `web_search_calls` | Number of `web_search_call` items in the response — i.e. distinct tool invocations the model emitted. |
-| `bing_queries` | True Bing transaction count, **reconciled from App Insights** when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set. For Foundry-hosted backends (`foundry-ws-bing`, `foundry-ws-bingcustom`, `agentfx-bing*`) this is `count(role=="tool")` from the `chat` span's `gen_ai.input.messages` array — the only place the server-side `web.run` fan-out is visible (the Responses API only exposes a summarized `action.queries`). Without the App Insights env var, falls back to `action.queries` length, which is a lower bound. For `openai-ws` (no server-side fan-out) `action.queries` is exact. |
+| `bing_queries` | True Bing transaction count, **reconciled from App Insights** when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set. <br>• For **Foundry-hosted** backends (`foundry-ws-bing`, `foundry-ws-bingcustom`) this is `count(role=="tool")` from the server-side `chat` span's `gen_ai.input.messages` array — the only place the real `web.run` fan-out is visible. The Responses API only exposes a summarized `action.queries`. <br>• For **`agentfx-bing*`** the agent_framework client-side span exposes `search_tool_call` parts in `gen_ai.output.messages` — one per *model-level* call. The actual per-Bing-transaction fan-out is performed by Foundry server-side and is **not visible** to client-side instrumentation, so this value equals `web_search_calls` and is a **lower bound** (notes column says so). To see the true fan-out you need Foundry's own App Insights instance. <br>• For **`openai-ws`** there is no server fan-out — `action.queries` length is exact. |
 | `latency_s` | Wall-clock seconds from sending the request to receiving the final response. |
 | `cost_usd` | See cost formula below. |
 | `answer_chars` | Length of the agent's final answer text. |
@@ -272,13 +280,13 @@ Override per-1,000-call rates via env vars (see `.env.example`).
 
 ```powershell
 # Ask a different question (cache key is per-query)
-uv run python -m websearch_bench.backends.agentfx_bing_cached "What is the medical tax credit for 2025?"
+uv run python -m websearch_bench.backends.agentfx_ws_cached "What is the medical tax credit for 2025?"
 
 # Bypass cache and refresh
-uv run python -m websearch_bench.backends.agentfx_bing_cached --no-cache "..."
+uv run python -m websearch_bench.backends.agentfx_ws_cached --no-cache "..."
 
 # Wipe all cache keys
-uv run python -m websearch_bench.backends.agentfx_bing_cached --clear-cache
+uv run python -m websearch_bench.backends.agentfx_ws_cached --clear-cache
 ```
 
 Start a local Redis if you don't already have one:
@@ -290,7 +298,13 @@ docker run --rm -p 6379:6379 redis:7
 ## Troubleshooting
 
 - **`DefaultAzureCredential` failures** — `az login` again; confirm
-  `az account show` returns the expected subscription.
+  `az account show` returns the expected subscription. The harness uses a
+  narrowed credential chain (`websearch_bench.auth.make_credential`) that
+  excludes Managed Identity / VS Code / shared-token-cache / Workload Identity
+  probes — this avoids the spurious 504 `GET 169.254.169.254/metadata/...`
+  dependency that shows up red in App Insights when running off-Azure. Auth
+  chain becomes: environment vars → Azure CLI → Azure Developer CLI → Azure
+  PowerShell.
 - **`PermissionDenied` on the Foundry project** — your identity needs the
   *Azure AI User* role on the project resource.
 - **Bing Custom Search returns empty results** — verify
