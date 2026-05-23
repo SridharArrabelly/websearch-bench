@@ -311,9 +311,18 @@ def count_search_calls_in_openai_output(response: Any) -> int:
 
 
 def count_web_search_calls_in_openai_output(response: Any) -> int:
-    """Count ``web_search_call`` items in an OpenAI/Foundry Responses object."""
+    """Count search-tool call items in an OpenAI/Foundry Responses object.
+
+    Recognizes both the OpenAI Responses ``web_search_call`` items (Foundry's
+    ``WebSearchTool``) and the Foundry-native ``bing_grounding_call`` items
+    emitted by ``BingGroundingTool``.
+    """
     output = getattr(response, "output", None) or []
-    return sum(1 for item in output if getattr(item, "type", None) == "web_search_call")
+    return sum(
+        1
+        for item in output
+        if getattr(item, "type", None) in ("web_search_call", "bing_grounding_call")
+    )
 
 
 def count_bing_queries_in_openai_output(response: Any) -> int | None:
@@ -372,7 +381,7 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
     # A. Sum the per-call query/result counts.
     sum_queries = 0
     for item in output:
-        if getattr(item, "type", None) != "web_search_call":
+        if getattr(item, "type", None) not in ("web_search_call", "bing_grounding_call"):
             continue
         action = getattr(item, "action", None)
         sub = 0
