@@ -172,6 +172,11 @@ def _setup_tracing() -> None:
     """
     if not os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
         return
+    # Enable the Azure SDK's experimental GenAI tracing so chat/agent
+    # spans carry the full gen_ai.* attributes (input.messages, etc.).
+    # Must be set BEFORE the SDK clients are instantiated.
+    os.environ.setdefault("AZURE_EXPERIMENTAL_ENABLE_GENAI_TRACING", "true")
+    os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "true")
     try:
         from azure.monitor.opentelemetry import configure_azure_monitor
         from agent_framework.observability import create_resource, enable_instrumentation
