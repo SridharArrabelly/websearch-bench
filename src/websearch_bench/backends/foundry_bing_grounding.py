@@ -14,10 +14,9 @@ Reference:
 https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/bing-tools?pivots=python
 
 Required env vars:
-    PROJECT_ENDPOINT             — Foundry project endpoint
-    BING_PROJECT_CONNECTION_NAME — name of the Grounding-with-Bing connection
-                                   on the project (looked up via
-                                   ``project.connections.get(NAME)``)
+    PROJECT_ENDPOINT      — Foundry project endpoint
+    BING_CONNECTION_NAME  — name of the Grounding-with-Bing connection on the
+                            project (resolved via ``project.connections.get(NAME)``)
 """
 
 from __future__ import annotations
@@ -50,8 +49,8 @@ from websearch_bench.shared import (
     usage_from_openai_response,
 )
 
-BACKEND_NAME = "foundry-bing"
-REQUIRED_ENV: tuple[str, ...] = ("PROJECT_ENDPOINT", "BING_PROJECT_CONNECTION_NAME")
+BACKEND_NAME = "foundry-bing-grounding"
+REQUIRED_ENV: tuple[str, ...] = ("PROJECT_ENDPOINT", "BING_CONNECTION_NAME")
 
 console = Console()
 
@@ -59,7 +58,7 @@ console = Console()
 async def run() -> RunMetrics:
     load_dotenv(override=True)
     project_endpoint = os.environ["PROJECT_ENDPOINT"]
-    bing_connection_name = os.environ["BING_PROJECT_CONNECTION_NAME"]
+    bing_connection_name = os.environ["BING_CONNECTION_NAME"]
 
     async with (
         make_credential() as credential,
@@ -71,7 +70,7 @@ async def run() -> RunMetrics:
         bing_connection = await project.connections.get(bing_connection_name)
 
         agent = await project.agents.create_version(
-            agent_name="foundry-bing",
+            agent_name="foundry-bing-grounding",
             definition=PromptAgentDefinition(
                 model=MODEL,
                 instructions=SHARED_INSTRUCTIONS,

@@ -121,8 +121,8 @@ def tool_cost(backend: str, web_search_calls: int | None) -> float:
     if backend.startswith("foundry-ws-bingcustom"):
         return calls * BING_CUSTOM_USD_PER_1K / 1000.0
     if (
-        backend.startswith("foundry-ws-bing")
-        or backend.startswith("foundry-bing")
+        backend.startswith("foundry-bing")
+        or backend.startswith("foundry-ws-bing")
         or backend.startswith("agentfx")
     ):
         return calls * BING_GROUNDING_USD_PER_1K / 1000.0
