@@ -145,13 +145,18 @@ class Timer:
 
 
 def debug_dump(backend: str, payload: Any) -> str | None:
-    """Dump a backend response to ``./debug/<backend>-<ts>.json`` when enabled.
+    """Dump a backend response to ``./debug/<backend>-<ts>.json``.
+
+    On by default — this is a benchmark tool, the per-run debug payload is
+    cheap and lets you verify counts (web_search_calls, bing_queries) against
+    the App Insights span. Opt out with ``WEBSEARCH_BENCH_DEBUG=0``.
 
     Returns the file path it wrote, or ``None`` if dumping is disabled or the
-    payload couldn't be serialized. We attempt ``.model_dump()`` first (pydantic
-    Responses object), then fall back to ``vars()`` or ``str()``.
+    payload couldn't be serialized. We attempt ``.model_dump()`` first
+    (pydantic Responses object), then fall back to ``vars()`` or ``str()``.
     """
-    if not (os.getenv("WEBSEARCH_BENCH_DEBUG") or os.getenv("DEBUG_DIR")):
+    flag = os.getenv("WEBSEARCH_BENCH_DEBUG")
+    if flag is not None and flag.strip().lower() in ("0", "false", "no", "off", ""):
         return None
     import json
     from pathlib import Path
@@ -246,14 +251,20 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
     10-20 ``tool_call_response`` messages flowing back from a single
     ``execute_tool web.run`` span — the count varies per run).
 
-    Strategy:
-    1.  Count ``web_search_call`` items in ``response.output``.
-    2.  For each such item, look for a list of sub-queries / sources / results
-        on either the item itself or its ``action`` payload. Known field
-        names across vendors: ``queries``, ``sub_queries``, ``search_queries``,
-        ``results``, ``sources``, ``citations``, ``search_results``.
-    3.  Sum the per-item sub-counts. If an item has no sub-list, count it as 1.
-    4.  Returns ``None`` if the response has no output array at all.
+    The Responses SDK frequently collapses the fan-out: ``response.output``
+    contains a single ``web_search_call`` item even when 14 queries actually
+    ran. So we use a multi-strategy probe and return the **max** of:
+
+      A.  Number of ``web_search_call`` items in ``response.output`` (or 1).
+      B.  Largest list of sub-queries / results / sources found on any
+          ``web_search_call`` item (or its ``action`` payload). Field names:
+          ``queries``, ``sub_queries``, ``search_queries``, ``results``,
+          ``sources``, ``citations``, ``search_results``.
+      C.  Number of ``url_citation`` annotations across all assistant
+          ``message`` items in ``response.output`` (one citation ≈ one Bing
+          hit the model decided to keep).
+
+    Returns ``None`` if the response has no output array at all.
     """
     output = getattr(response, "output", None)
     if output is None:
@@ -270,16 +281,29 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
         val = holder.get(attr) if isinstance(holder, dict) else getattr(holder, attr, None)
         return len(val) if isinstance(val, list) else 0
 
-    total = 0
+    # A + B
+    call_count = 0
+    fanout_max = 0
     for item in output:
         if getattr(item, "type", None) != "web_search_call":
             continue
+        call_count += 1
         action = getattr(item, "action", None)
-        sub = 0
         for attr in list_attrs:
-            sub = max(sub, _list_len(item, attr), _list_len(action, attr))
-        total += sub if sub else 1
-    return total
+            fanout_max = max(fanout_max, _list_len(item, attr), _list_len(action, attr))
+
+    # C — url_citation annotations on the assistant message content.
+    citation_count = 0
+    for item in output:
+        if getattr(item, "type", None) != "message":
+            continue
+        for content in getattr(item, "content", None) or []:
+            for ann in getattr(content, "annotations", None) or []:
+                atype = ann.get("type") if isinstance(ann, dict) else getattr(ann, "type", None)
+                if atype in ("url_citation", "file_citation"):
+                    citation_count += 1
+
+    return max(call_count, fanout_max, citation_count) or call_count
 
 
 # Item types in the OpenAI/Foundry Responses ``output`` array that represent
@@ -323,22 +347,29 @@ def count_search_calls_in_agent_response(result: Any) -> int | None:
 def count_bing_queries_in_agent_response(result: Any) -> int | None:
     """Count Bing query results returned to the model via the AF response.
 
-    Walks ``result.messages[*].contents[*]`` and counts ``Content`` items
-    whose ``type`` is ``"search_tool_result"`` (one per Bing transaction
-    handed back to the model). If no result contents are present, falls back
-    to the web_search_call count.
+    Probes multiple signals and returns the max:
+      A.  Number of ``search_tool_result`` Content items (one per Bing
+          transaction handed back to the model).
+      B.  Number of ``url_citation`` annotations on any text content (same
+          idea as the OpenAI Responses variant).
+      C.  Falls back to ``count_web_search_calls_in_agent_response``.
     """
     messages = getattr(result, "messages", None)
     if not messages:
         return None
     results = 0
+    citations = 0
     for msg in messages:
         for content in getattr(msg, "contents", None) or []:
-            if getattr(content, "type", None) == "search_tool_result":
+            ctype = getattr(content, "type", None)
+            if ctype == "search_tool_result":
                 results += 1
-    if results:
-        return results
-    return count_web_search_calls_in_agent_response(result)
+            for ann in getattr(content, "annotations", None) or []:
+                atype = ann.get("type") if isinstance(ann, dict) else getattr(ann, "type", None)
+                if atype in ("url_citation", "file_citation"):
+                    citations += 1
+    fallback = count_web_search_calls_in_agent_response(result) or 0
+    return max(results, citations, fallback)
 
 
 def count_web_search_calls_in_agent_response(result: Any) -> int | None:
