@@ -54,6 +54,25 @@ def _is_disabled(label: str) -> bool:
 
 async def run_all() -> list[RunMetrics]:
     load_dotenv(override=True)
+
+    # Detect stale/typo'd ENABLE_* vars so a rename doesn't silently run
+    # everything because the user's .env still uses the old names.
+    valid_enable_vars = {_enable_var_for(getattr(m, "BACKEND_NAME", m.__name__)) for m in discover()}
+    stray = sorted(
+        k for k in os.environ
+        if k.startswith("ENABLE_") and k not in valid_enable_vars
+    )
+    if stray:
+        console.print(
+            "[bold yellow]Warning:[/bold yellow] unknown ENABLE_* env vars "
+            "(ignored; will NOT toggle anything):"
+        )
+        for k in stray:
+            console.print(f"  [yellow]{k}[/yellow]={os.environ[k]!r}")
+        console.print(
+            f"  [dim]Valid names: {', '.join(sorted(valid_enable_vars))}[/dim]\n"
+        )
+
     results: list[RunMetrics] = []
     for module in discover():
         label: str = getattr(module, "BACKEND_NAME", module.__name__)
