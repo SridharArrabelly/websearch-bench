@@ -147,18 +147,53 @@ def count_search_calls_in_openai_output(response: Any) -> int:
 
 
 def usage_from_agent_framework(result: Any) -> dict[str, int | None]:
-    """Best-effort token extraction from agent_framework AgentRunResponse."""
-    for attr in ("usage_details", "usage", "token_usage"):
-        usage = getattr(result, attr, None)
-        if usage is None:
-            continue
-        try:
-            d = usage.model_dump() if hasattr(usage, "model_dump") else dict(usage)
-        except Exception:
-            continue
+    """Token extraction from an agent_framework ``AgentResponse``.
+
+    AF stores totals on ``response.usage_details`` (a ``UsageDetails`` TypedDict
+    with ``input_token_count``/``output_token_count``/``total_token_count``).
+    Per-turn usage is also attached to each ``Message`` for streaming/tool flows,
+    so we sum across messages when the top-level totals aren't populated.
+    """
+
+    def _normalize(d: dict[str, Any]) -> dict[str, int | None]:
         return {
-            "input_tokens": d.get("input_tokens") or d.get("prompt_tokens"),
-            "output_tokens": d.get("output_tokens") or d.get("completion_tokens"),
-            "total_tokens": d.get("total_tokens"),
+            "input_tokens": d.get("input_token_count") or d.get("input_tokens") or d.get("prompt_tokens"),
+            "output_tokens": d.get("output_token_count") or d.get("output_tokens") or d.get("completion_tokens"),
+            "total_tokens": d.get("total_token_count") or d.get("total_tokens"),
         }
-    return {}
+
+    def _as_dict(usage: Any) -> dict[str, Any] | None:
+        if usage is None:
+            return None
+        if isinstance(usage, dict):
+            return dict(usage)
+        if hasattr(usage, "model_dump"):
+            try:
+                return usage.model_dump()
+            except Exception:
+                return None
+        try:
+            return dict(usage)
+        except Exception:
+            return None
+
+    for attr in ("usage_details", "usage", "token_usage"):
+        d = _as_dict(getattr(result, attr, None))
+        if d:
+            norm = _normalize(d)
+            if any(v is not None for v in norm.values()):
+                return norm
+
+    # Fallback: sum usage_details across messages.
+    totals = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    saw_any = False
+    for msg in getattr(result, "messages", []) or []:
+        d = _as_dict(getattr(msg, "usage_details", None))
+        if not d:
+            continue
+        n = _normalize(d)
+        for k in totals:
+            if n.get(k) is not None:
+                totals[k] += int(n[k])
+                saw_any = True
+    return totals if saw_any else {}
