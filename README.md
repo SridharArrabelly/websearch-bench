@@ -118,17 +118,21 @@ default so you can run the Azure/Foundry surfaces without an OpenAI key.
 
 ### Toggling backends
 
-Every backend can be skipped without removing its env vars by setting its
-`ENABLE_<NAME>` flag to `0` (also accepts `false` / `no` / `off`). The name is
-the upper-case backend label with dashes turned into underscores:
+Every backend has an `ENABLE_<NAME>` flag derived from its label (upper-case,
+dashes → underscores). The flag accepts `1` / `true` / `yes` / `on` to enable
+and `0` / `false` / `no` / `off` to disable.
 
-| Flag                          | Default | Effect when `=0`              |
-| ----------------------------- | ------- | ----------------------------- |
-| `ENABLE_FOUNDRY_WS_BING`      | on      | skip `foundry-ws-bing`        |
-| `ENABLE_FOUNDRY_WS_BINGCUSTOM`| on      | skip `foundry-ws-bingcustom`  |
-| `ENABLE_AGENTFX_BING`         | on      | skip `agentfx-bing`           |
-| `ENABLE_AGENTFX_BING_CACHED`  | on      | skip `agentfx-bing-cached`    |
-| `ENABLE_OPENAI_WS`            | **off** | set to `1` to enable          |
+There are **two semantics**: most backends are on-by-default (you only need to
+set the flag to *skip* them), while the OpenAI Responses backend is opt-in
+because it bills your OpenAI subscription separately:
+
+| Flag                          | Default     | To run                          | To skip                          |
+| ----------------------------- | ----------- | ------------------------------- | -------------------------------- |
+| `ENABLE_FOUNDRY_WS_BING`      | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
+| `ENABLE_FOUNDRY_WS_BINGCUSTOM`| **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
+| `ENABLE_AGENTFX_BING`         | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
+| `ENABLE_AGENTFX_BING_CACHED`  | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
+| `ENABLE_OPENAI_WS`            | **disabled**| **set `=1`** / `true` / `yes` / `on` | leave unset (or set `=0`)        |
 
 Optional everywhere:
 
