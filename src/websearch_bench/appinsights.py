@@ -67,22 +67,42 @@ async def fetch_chat_span(
     if not app_id:
         return None
 
-    # When multiple chat spans share a response_id (e.g. agent_framework
-    # emits its own client-side chat span AND Foundry emits a server-side
-    # one for the same call), pick the row with the MAX tool_msgs so we
-    # recover the real fan-out instead of the empty client-side view.
+    # Two schemas live in the same App Insights:
+    #
+    #   Foundry server-side (foundry-ws-bing, foundry-ws-bingcustom):
+    #     - tokens in customMeasurements
+    #     - fan-out = role="tool" entries in gen_ai.input.messages
+    #
+    #   agent_framework client-side (agentfx-bing):
+    #     - tokens in customDimensions (as strings)
+    #     - no role="tool" entries; tool turns live in gen_ai.output.messages
+    #       as type="search_tool_call"/"search_tool_result" parts. Foundry's
+    #       hosted tool hides the real fan-out from this side, so the call
+    #       count here equals web_search_calls (lower bound).
+    #
+    # We pick the richer span (more tool_msgs / search_tool_calls) and pull
+    # tokens from whichever location is populated.
     kql = f"""
 let respId = '{response_id}';
 dependencies
 | where timestamp > ago({lookback_minutes}m)
 | where tostring(customDimensions["gen_ai.response.id"]) == respId
 | where tostring(customDimensions["gen_ai.operation.name"]) == "chat"
-| extend raw = tostring(customDimensions["gen_ai.input.messages"])
-| extend tool_msgs = array_length(extract_all(@'("role":\\s*"tool")', raw))
-| extend total_msgs = array_length(parse_json(raw))
-| extend in_tokens     = toint(customMeasurements["gen_ai.usage.input_tokens"])
-| extend out_tokens    = toint(customMeasurements["gen_ai.usage.output_tokens"])
-| extend cached_tokens = toint(customMeasurements["gen_ai.usage.cached_tokens"])
+| extend raw_in  = tostring(customDimensions["gen_ai.input.messages"])
+| extend raw_out = tostring(customDimensions["gen_ai.output.messages"])
+| extend tool_msgs_in  = array_length(extract_all(@'("role":\\s*"tool")', raw_in))
+| extend tool_calls_out = array_length(extract_all(@'("type":\\s*"search_tool_call")', raw_out))
+| extend tool_msgs = max_of(coalesce(tool_msgs_in, 0), coalesce(tool_calls_out, 0))
+| extend total_msgs = array_length(parse_json(raw_in))
+| extend in_meas  = toint(customMeasurements["gen_ai.usage.input_tokens"])
+| extend out_meas = toint(customMeasurements["gen_ai.usage.output_tokens"])
+| extend cac_meas = toint(customMeasurements["gen_ai.usage.cached_tokens"])
+| extend in_dim   = toint(customDimensions["gen_ai.usage.input_tokens"])
+| extend out_dim  = toint(customDimensions["gen_ai.usage.output_tokens"])
+| extend cac_dim  = toint(customDimensions["gen_ai.usage.cached_tokens"])
+| extend in_tokens     = coalesce(in_meas,  in_dim)
+| extend out_tokens    = coalesce(out_meas, out_dim)
+| extend cached_tokens = coalesce(cac_meas, cac_dim)
 | top 1 by tool_msgs desc
 | project chat_span_id = id, tool_msgs, total_msgs, in_tokens, out_tokens, cached_tokens
 """.strip()
@@ -113,9 +133,9 @@ dependencies
                     data = await resp.json()
                     facts = _parse_chat_facts(data)
                     if facts is not None:
-                        # Track the best seen so we don't regress, then keep
-                        # polling briefly in case a richer (server-side) span
-                        # ingests after a client-side one with tool_msgs=0.
+                        # Track best seen; keep polling while best.tool_msgs==0
+                        # in case a richer (e.g. Foundry server-side) span
+                        # ingests after an initial client-side row.
                         if best is None or facts.tool_msgs > best.tool_msgs:
                             best = facts
                         if best.tool_msgs > 0:
@@ -249,7 +269,20 @@ async def reconcile_metrics(
         return metrics
 
     metrics.bing_queries = facts.tool_msgs
-    metrics.notes = f"bing_queries from App Insights chat span (tool_msgs={facts.tool_msgs})"
+    is_agentfx = metrics.backend.startswith("agentfx")
+    if is_agentfx:
+        # agent_framework's chat span only sees the model-level
+        # `search_tool_call` (= web_search_calls). Foundry hides the actual
+        # per-Bing-transaction fan-out from the client. To see the real
+        # fan-out we'd need Foundry's server-side App Insights.
+        metrics.notes = (
+            f"bing_queries from agent_framework chat span (search_tool_calls={facts.tool_msgs}); "
+            "actual Bing fan-out hidden by Foundry server-side"
+        )
+    else:
+        metrics.notes = (
+            f"bing_queries from Foundry App Insights chat span (tool_msgs={facts.tool_msgs})"
+        )
     metrics.cost_usd = round(
         estimate_cost(
             backend=metrics.backend,
