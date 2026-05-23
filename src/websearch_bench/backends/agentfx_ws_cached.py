@@ -143,7 +143,7 @@ def _build_agent(client: FoundryChatClient) -> Agent:
     )
     return Agent(
         client=client,
-        name="WebSearchToolAgent",
+        name="agentfx-bing-cached",
         instructions=SHARED_INSTRUCTIONS,
         tools=[web_search_tool],
         description="Agent Framework + Foundry Bing benchmark backend (cached).",

@@ -53,7 +53,7 @@ async def run() -> RunMetrics:
         )
         agent = Agent(
             client=client,
-            name="AgentFx-WebSearchTool",
+            name="agentfx-bing",
             instructions=SHARED_INSTRUCTIONS,
             tools=[web_search_tool],
             description="Agent Framework + Foundry Bing benchmark backend.",

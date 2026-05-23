@@ -53,7 +53,7 @@ async def run() -> RunMetrics:
         openai = project.get_openai_client()
 
         agent = await project.agents.create_version(
-            agent_name="WebSearchToolAgent-BingCustom",
+            agent_name="foundry-ws-bingcustom",
             definition=PromptAgentDefinition(
                 model=MODEL,
                 instructions=SHARED_INSTRUCTIONS,
