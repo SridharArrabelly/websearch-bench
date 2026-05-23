@@ -25,12 +25,21 @@ import os
 
 # ---------------------------------------------------------------------------
 # Model token pricing (USD per 1,000 tokens). Verify before quoting.
+#
+# Source: https://azure.microsoft.com/pricing/details/azure-openai/ (Global
+# Standard SKU, pay-as-you-go). Stated by the vendor in USD per 1M tokens; we
+# store the equivalent per-1K values here so the math lines up with
+# ``model_token_cost`` below.
+#
+#   gpt-5.1 : input $1.25/1M, cached input $0.125/1M, output $10/1M
+#   gpt-4o  : input $2.50/1M, cached input $1.25/1M,  output $10/1M
 # ---------------------------------------------------------------------------
 
 MODEL_PRICING_PER_1K: dict[str, dict[str, float]] = {
-    "gpt-5.1": {"input": 0.005, "output": 0.015},
-    "gpt-5.5": {"input": 0.010, "output": 0.030},
-    "gpt-4o":  {"input": 0.0025, "output": 0.010},
+    "gpt-5.1":      {"input": 0.00125, "cached_input": 0.000125, "output": 0.010},
+    "gpt-5.1-mini": {"input": 0.00025, "cached_input": 0.000025, "output": 0.002},
+    "gpt-4o":       {"input": 0.00250, "cached_input": 0.00125,  "output": 0.010},
+    "gpt-4o-mini":  {"input": 0.000150, "cached_input": 0.000075, "output": 0.000600},
 }
 
 

@@ -173,6 +173,22 @@ Default `tool_rate_per_1k` (verified mid-2025, override via env):
 | `openai-web-search` | **$10 / 1,000 calls** (all models) | [OpenAI pricing](https://openai.com/api/pricing/) |
 | `agentfx-bing-cached (hit)` | $0 — answer served from Redis, no Bing call | n/a |
 
+Default model token rates (Azure OpenAI Global Standard, USD per **1M** tokens —
+source: <https://azure.microsoft.com/pricing/details/azure-openai/>):
+
+| Model | Input | Cached input | Output |
+| --- | ---:| ---:| ---:|
+| `gpt-5.1` | $1.25 | $0.125 | $10.00 |
+| `gpt-5.1-mini` | $0.25 | $0.025 | $2.00 |
+| `gpt-4o` | $2.50 | $1.25 | $10.00 |
+| `gpt-4o-mini` | $0.15 | $0.075 | $0.60 |
+
+Set `MODEL` (Foundry / Agent Framework runs) and `OPENAI_MODEL` (OpenAI run)
+in `.env` — the harness picks the matching row automatically. Unknown models
+fall through with a model-token cost of $0 (only the per-call tool charge is
+billed), so add new models to `MODEL_PRICING_PER_1K` in `pricing.py` before
+quoting.
+
 ## Change the workload
 
 Every backend reads its workload from `src/websearch_bench/shared.py`. To
