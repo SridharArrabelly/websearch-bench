@@ -36,11 +36,32 @@ def _missing(required: tuple[str, ...]) -> list[str]:
     return [name for name in required if not os.getenv(name)]
 
 
+def _enable_var_for(label: str) -> str:
+    """ENABLE_FOUNDRY_BING_CUSTOM for label 'foundry-bing-custom', etc."""
+    return "ENABLE_" + label.upper().replace("-", "_")
+
+
+def _is_disabled(label: str) -> bool:
+    """Honor central opt-out: ENABLE_<NAME>=0/false/no/off skips the backend.
+
+    Unset or any other value means 'not explicitly disabled' — the backend's
+    own ``enabled()`` hook (if any) still gets the final say.
+    """
+    val = os.getenv(_enable_var_for(label), "").strip().lower()
+    return val in ("0", "false", "no", "off")
+
+
 async def run_all() -> list[RunMetrics]:
+    load_dotenv(override=True)
     results: list[RunMetrics] = []
     for module in discover():
         label: str = getattr(module, "BACKEND_NAME", module.__name__)
         required: tuple[str, ...] = getattr(module, "REQUIRED_ENV", ())
+        if _is_disabled(label):
+            reason = f"set {_enable_var_for(label)}=1 to enable"
+            console.print(f"[yellow]Skipping {label}: disabled via {_enable_var_for(label)}[/yellow]")
+            results.append(RunMetrics(backend=label, model="—", notes=f"skipped ({reason})"))
+            continue
         enabled_fn = getattr(module, "enabled", None)
         if callable(enabled_fn):
             enabled, reason = enabled_fn()

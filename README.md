@@ -103,6 +103,20 @@ Minimum env vars per backend (set in `.env`):
 `ENABLE_OPENAI_WEB_SEARCH=1` to include it in the comparison; it's skipped by
 default so you can run the Azure/Foundry surfaces without an OpenAI key.
 
+### Toggling backends
+
+Every backend can be skipped without removing its env vars by setting its
+`ENABLE_<NAME>` flag to `0` (also accepts `false` / `no` / `off`). The name is
+the upper-case backend label with dashes turned into underscores:
+
+| Flag                          | Default | Effect when `=0`             |
+| ----------------------------- | ------- | ---------------------------- |
+| `ENABLE_FOUNDRY_BING`         | on      | skip `foundry-bing`          |
+| `ENABLE_FOUNDRY_BING_CUSTOM`  | on      | skip `foundry-bing-custom`   |
+| `ENABLE_AGENTFX_BING`         | on      | skip `agentfx-bing`          |
+| `ENABLE_AGENTFX_BING_CACHED`  | on      | skip `agentfx-bing-cached`   |
+| `ENABLE_OPENAI_WEB_SEARCH`    | **off** | set to `1` to enable         |
+
 Optional everywhere:
 
 - `APPLICATIONINSIGHTS_CONNECTION_STRING` — used for **two** things: tracing for
