@@ -106,10 +106,17 @@ async def reconcile_all(results: list[RunMetrics]) -> None:
     console.rule("[bold]Reconciling against App Insights")
     for r in targets:
         console.print(f"[dim]-> {r.backend}: {r.response_id}[/dim]")
-        await reconcile_metrics(r, r.response_id, console=console, timeout_s=180)
-        console.print(
-            f"[dim]   bing_queries={r.bing_queries}  cost=${r.cost_usd}  notes={r.notes}[/dim]"
+
+    async def _one(r: RunMetrics) -> None:
+        await reconcile_metrics(r, r.response_id, console=None, timeout_s=90)
+        status = (
+            f"bing_queries={r.bing_queries}  cost=${r.cost_usd}"
+            if "App Insights chat span" in (r.notes or "")
+            else "not reconciled (lower bound retained)"
         )
+        console.print(f"[dim]   {r.backend}: {status}[/dim]")
+
+    await asyncio.gather(*(_one(r) for r in targets))
 
 
 async def amain() -> None:
