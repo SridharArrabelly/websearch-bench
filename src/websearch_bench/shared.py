@@ -244,25 +244,26 @@ def count_web_search_calls_in_openai_output(response: Any) -> int:
 
 
 def count_bing_queries_in_openai_output(response: Any) -> int | None:
-    """Estimate the number of actual Bing queries issued behind the scenes.
+    """Estimate the number of actual Bing search queries issued.
 
-    Foundry's server-side ``web.run`` tool can fan out one model-level
-    ``web_search_call`` into many Bing transactions (App Insights shows e.g.
-    10-20 ``tool_call_response`` messages flowing back from a single
-    ``execute_tool web.run`` span — the count varies per run).
+    Ground truth (from a real Foundry response dump): each ``web_search_call``
+    item in ``response.output`` carries an ``action.queries`` list — Bing is
+    billed once per entry in that list (one query = one transaction). One
+    response can contain N web_search_call items, each with M queries; the
+    actual Bing bill is the **sum**.
 
-    The Responses SDK frequently collapses the fan-out: ``response.output``
-    contains a single ``web_search_call`` item even when 14 queries actually
-    ran. So we use a multi-strategy probe and return the **max** of:
+    Example real dump (foundry-bing, single user prompt):
+        output[0].type = "web_search_call"   action.queries = ["calculator: 1+1"]
+        output[1].type = "web_search_call"   action.queries = ["tax tables …", "individual income tax …"]
+        => 3 Bing queries (1 + 2)
 
-      A.  Number of ``web_search_call`` items in ``response.output`` (or 1).
-      B.  Largest list of sub-queries / results / sources found on any
-          ``web_search_call`` item (or its ``action`` payload). Field names:
-          ``queries``, ``sub_queries``, ``search_queries``, ``results``,
-          ``sources``, ``citations``, ``search_results``.
-      C.  Number of ``url_citation`` annotations across all assistant
-          ``message`` items in ``response.output`` (one citation ≈ one Bing
-          hit the model decided to keep).
+    Strategy: walk every ``web_search_call`` and sum the largest list-shaped
+    payload we can find (``queries`` / ``sub_queries`` / ``search_queries`` /
+    ``results`` / ``sources`` / ``citations``). Falls back to 1 per call if
+    none of those lists are present. As an additional signal we also count
+    ``url_citation`` annotations on the assistant message; if that is larger
+    than what we summed from the calls (which can happen when the SDK
+    collapses the calls), we return that instead.
 
     Returns ``None`` if the response has no output array at all.
     """
@@ -281,18 +282,19 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
         val = holder.get(attr) if isinstance(holder, dict) else getattr(holder, attr, None)
         return len(val) if isinstance(val, list) else 0
 
-    # A + B
-    call_count = 0
-    fanout_max = 0
+    # A. Sum the per-call query/result counts.
+    sum_queries = 0
     for item in output:
         if getattr(item, "type", None) != "web_search_call":
             continue
-        call_count += 1
         action = getattr(item, "action", None)
+        sub = 0
         for attr in list_attrs:
-            fanout_max = max(fanout_max, _list_len(item, attr), _list_len(action, attr))
+            sub = max(sub, _list_len(item, attr), _list_len(action, attr))
+        sum_queries += sub if sub else 1
 
-    # C — url_citation annotations on the assistant message content.
+    # B. url_citation annotations on the assistant message (fallback signal
+    # for when the SDK collapses the fan-out).
     citation_count = 0
     for item in output:
         if getattr(item, "type", None) != "message":
@@ -303,7 +305,7 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
                 if atype in ("url_citation", "file_citation"):
                     citation_count += 1
 
-    return max(call_count, fanout_max, citation_count) or call_count
+    return max(sum_queries, citation_count)
 
 
 # Item types in the OpenAI/Foundry Responses ``output`` array that represent
