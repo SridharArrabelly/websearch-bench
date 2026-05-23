@@ -40,6 +40,7 @@ from websearch_bench.shared import (
     USER_COUNTRY,
     RunMetrics,
     Timer,
+    count_bing_queries_in_agent_response,
     count_tool_calls_in_agent_response,
     count_web_search_calls_in_agent_response,
     print_metrics,
@@ -187,14 +188,17 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
 
         usage = usage_from_agent_framework(result)
         web_search_calls = count_web_search_calls_in_agent_response(result)
+        bing_queries = count_bing_queries_in_agent_response(result)
         tool_calls = count_tool_calls_in_agent_response(result)
         metrics = RunMetrics(
             backend=f"{BACKEND_NAME} (miss)",
             model=settings.model,
             input_tokens=usage.get("input_tokens"),
+            cached_input_tokens=usage.get("cached_input_tokens"),
             output_tokens=usage.get("output_tokens"),
             total_tokens=usage.get("total_tokens"),
             web_search_calls=web_search_calls,
+            bing_queries=bing_queries,
             tool_calls=tool_calls,
             latency_s=round(t.elapsed, 2),
             answer_chars=len(result.text or ""),
@@ -207,7 +211,9 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
                 model=metrics.model,
                 input_tokens=metrics.input_tokens,
                 output_tokens=metrics.output_tokens,
+                cached_input_tokens=metrics.cached_input_tokens,
                 web_search_calls=metrics.web_search_calls if metrics.web_search_calls else 1,
+                bing_queries=metrics.bing_queries if metrics.bing_queries else None,
             ),
             4,
         )

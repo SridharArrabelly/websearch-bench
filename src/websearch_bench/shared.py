@@ -61,11 +61,21 @@ class RunMetrics:
     backend: str
     model: str
     input_tokens: int | None = None
+    # Cached portion of input_tokens (billed at the cached_input rate). On
+    # Azure OpenAI / Foundry this comes from
+    # ``usage.input_tokens_details.cached_tokens`` and is also surfaced on the
+    # App Insights span as ``gen_ai.usage.cached_tokens``.
+    cached_input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
-    # Number of times the model invoked the web-search tool. This is what
-    # Bing / OpenAI bill against ("transactions" / "calls").
+    # Number of times the model invoked the web-search tool (counted from the
+    # response output items). Bills against the model-side tool charge.
     web_search_calls: int | None = None
+    # Number of tool *responses* fed back into the model. For Foundry's
+    # server-side ``web.run`` this is the better proxy for actual Bing queries
+    # because one model-level web_search_call can fan out to many Bing
+    # transactions inside the tool. Equals web_search_calls when no fan-out.
+    bing_queries: int | None = None
     # Total tool invocations across ALL tools (web_search, function calls,
     # MCP, code interpreter, ...). For the current setup this equals
     # ``web_search_calls`` because we only attach web_search.
@@ -91,9 +101,11 @@ class RunMetrics:
             self.backend,
             self.model,
             fmt(self.input_tokens),
+            fmt(self.cached_input_tokens),
             fmt(self.output_tokens),
             fmt(self.total_tokens),
             fmt(self.web_search_calls),
+            fmt(self.bing_queries),
             fmt(self.tool_calls),
             fmt(self.latency_s, " s"),
             fmt(self.cost_usd, " USD"),
@@ -132,7 +144,13 @@ class Timer:
 
 
 def usage_from_openai_response(response: Any) -> dict[str, int | None]:
-    """Pull token counts out of an openai.responses.Response (or Foundry's)."""
+    """Pull token counts out of an openai.responses.Response (or Foundry's).
+
+    Also extracts cached input tokens from ``input_tokens_details.cached_tokens``
+    (Responses API) or ``prompt_tokens_details.cached_tokens`` (chat
+    completions style). The same number is surfaced on the Foundry App
+    Insights span as ``gen_ai.usage.cached_tokens``.
+    """
     usage = getattr(response, "usage", None)
     if usage is None:
         return {}
@@ -140,9 +158,19 @@ def usage_from_openai_response(response: Any) -> dict[str, int | None]:
         d = usage.model_dump()
     except AttributeError:
         d = dict(usage)
+    cached = None
+    for k in ("input_tokens_details", "prompt_tokens_details"):
+        details = d.get(k)
+        if isinstance(details, dict):
+            cached = details.get("cached_tokens")
+            if cached is not None:
+                break
+    if cached is None:
+        cached = d.get("cached_tokens") or d.get("cached_input_tokens")
     return {
-        "input_tokens": d.get("input_tokens"),
-        "output_tokens": d.get("output_tokens"),
+        "input_tokens": d.get("input_tokens") or d.get("prompt_tokens"),
+        "cached_input_tokens": cached,
+        "output_tokens": d.get("output_tokens") or d.get("completion_tokens"),
         "total_tokens": d.get("total_tokens"),
     }
 
@@ -156,6 +184,48 @@ def count_web_search_calls_in_openai_output(response: Any) -> int:
     """Count ``web_search_call`` items in an OpenAI/Foundry Responses object."""
     output = getattr(response, "output", None) or []
     return sum(1 for item in output if getattr(item, "type", None) == "web_search_call")
+
+
+def count_bing_queries_in_openai_output(response: Any) -> int | None:
+    """Estimate the number of actual Bing queries issued behind the scenes.
+
+    Foundry's server-side ``web.run`` tool can fan out one model-level
+    ``web_search_call`` into many Bing transactions (App Insights shows e.g.
+    14 tool_call_response messages flowing back from a single web.run span).
+
+    We approximate this by looking for sub-query lists on each web_search_call
+    item — vendors expose this under different keys (``queries``, ``sub_queries``,
+    ``action.queries``, ``results``). When none of those are present we fall
+    back to the model-level call count.
+
+    Returns None if the response has no output array at all.
+    """
+    output = getattr(response, "output", None)
+    if output is None:
+        return None
+    total = 0
+    found_subcount = False
+    for item in output:
+        if getattr(item, "type", None) != "web_search_call":
+            continue
+        sub = 0
+        for attr in ("queries", "sub_queries", "search_queries", "results"):
+            val = getattr(item, attr, None)
+            if isinstance(val, list) and val:
+                sub = max(sub, len(val))
+                found_subcount = True
+        action = getattr(item, "action", None)
+        if action is not None:
+            for attr in ("queries", "sub_queries", "search_queries"):
+                val = getattr(action, attr, None) if not isinstance(action, dict) else action.get(attr)
+                if isinstance(val, list) and val:
+                    sub = max(sub, len(val))
+                    found_subcount = True
+        total += sub if sub else 1
+    if not found_subcount:
+        # No fan-out signal exposed by the SDK — fall back to call count.
+        return count_web_search_calls_in_openai_output(response)
+    return total
 
 
 # Item types in the OpenAI/Foundry Responses ``output`` array that represent
@@ -193,6 +263,27 @@ def count_tool_calls_in_openai_output(response: Any) -> int:
 
 def count_search_calls_in_agent_response(result: Any) -> int | None:
     """Backwards-compatible alias for ``count_web_search_calls_in_agent_response``."""
+    return count_web_search_calls_in_agent_response(result)
+
+
+def count_bing_queries_in_agent_response(result: Any) -> int | None:
+    """Count Bing query results returned to the model via the AF response.
+
+    Walks ``result.messages[*].contents[*]`` and counts ``Content`` items
+    whose ``type`` is ``"search_tool_result"`` (one per Bing transaction
+    handed back to the model). If no result contents are present, falls back
+    to the web_search_call count.
+    """
+    messages = getattr(result, "messages", None)
+    if not messages:
+        return None
+    results = 0
+    for msg in messages:
+        for content in getattr(msg, "contents", None) or []:
+            if getattr(content, "type", None) == "search_tool_result":
+                results += 1
+    if results:
+        return results
     return count_web_search_calls_in_agent_response(result)
 
 
@@ -261,8 +352,16 @@ def usage_from_agent_framework(result: Any) -> dict[str, int | None]:
     """
 
     def _normalize(d: dict[str, Any]) -> dict[str, int | None]:
+        # AF surfaces cached tokens via additional_properties in some flavors,
+        # or via input_token_details.cached_tokens. Probe both.
+        cached = d.get("cached_input_tokens") or d.get("cached_tokens")
+        if cached is None:
+            details = d.get("input_token_details") or d.get("input_tokens_details")
+            if isinstance(details, dict):
+                cached = details.get("cached_tokens")
         return {
             "input_tokens": d.get("input_token_count") or d.get("input_tokens") or d.get("prompt_tokens"),
+            "cached_input_tokens": cached,
             "output_tokens": d.get("output_token_count") or d.get("output_tokens") or d.get("completion_tokens"),
             "total_tokens": d.get("total_token_count") or d.get("total_tokens"),
         }
@@ -290,7 +389,7 @@ def usage_from_agent_framework(result: Any) -> dict[str, int | None]:
                 return norm
 
     # Fallback: sum usage_details across messages.
-    totals = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    totals: dict[str, int] = {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     saw_any = False
     for msg in getattr(result, "messages", []) or []:
         d = _as_dict(getattr(msg, "usage_details", None))

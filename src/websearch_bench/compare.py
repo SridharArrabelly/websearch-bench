@@ -25,9 +25,9 @@ RESULTS_HTML = Path.cwd() / "results.html"
 # Columns written to CSV. `answer` is intentionally excluded — it is multi-KB
 # free text and belongs in the HTML report, not a spreadsheet cell.
 _CSV_COLUMNS = [
-    "backend", "model", "input_tokens", "output_tokens", "total_tokens",
-    "web_search_calls", "tool_calls", "latency_s", "cost_usd",
-    "answer_chars", "notes",
+    "backend", "model", "input_tokens", "cached_input_tokens", "output_tokens",
+    "total_tokens", "web_search_calls", "bing_queries", "tool_calls",
+    "latency_s", "cost_usd", "answer_chars", "notes",
 ]
 
 
@@ -62,8 +62,8 @@ async def run_all() -> list[RunMetrics]:
 def render(results: list[RunMetrics]) -> None:
     table = Table(title=f"Web-search comparison — query: {SHARED_QUERY!r}")
     for col in [
-        "backend", "model", "in_tok", "out_tok", "total_tok",
-        "web_search", "tool_calls", "latency", "cost", "answer", "notes",
+        "backend", "model", "in_tok", "cached", "out_tok", "total_tok",
+        "ws_calls", "bing_q", "tool_calls", "latency", "cost", "answer", "notes",
     ]:
         table.add_column(col)
     for r in results:

@@ -150,19 +150,32 @@ Each run reports a normalized `RunMetrics` row:
 | Column | Meaning |
 | --- | --- |
 | `input_tokens` / `output_tokens` / `total_tokens` | Model usage as reported by the SDK (OpenAI `response.usage`, Foundry's mirror of it, or `agent_framework`'s `usage_details`). |
-| `web_search_calls` | Number of times **the model** invoked the web-search tool to answer your one question. This is what Bing / OpenAI bill against — the user only sends 1 query but the model may issue 0, 1, 2, … web searches per response. |
-| `tool_calls` | Number of **all** tool invocations (web_search, function tools, MCP tools, …). Equals `web_search_calls` in this bench because web_search is the only tool attached. |
+| `cached_input_tokens` | Portion of `input_tokens` served from Azure OpenAI prompt caching. Billed at the **cached_input** rate (≈10× cheaper). Same number surfaced on the Foundry App Insights span as `gen_ai.usage.cached_tokens`. |
+| `web_search_calls` | Number of times **the model** invoked the web-search tool. The model decides 0..N searches per response. |
+| `bing_queries` | Estimated **actual Bing transactions** issued behind the scenes. For Foundry's server-side `web.run` tool, one model-level `web_search_call` can fan out to many Bing queries — App Insights typically shows 10-15 `tool_call_response` messages flowing back from a single `execute_tool web.run` span. This is the number we bill against. Falls back to `web_search_calls` if the SDK doesn't expose the fan-out. |
+| `tool_calls` | Total tool invocations (web_search + function + MCP + code interpreter, …). Equals `web_search_calls` in this bench because web_search is the only attached tool. |
 | `latency_s` | Wall-clock seconds from sending the request to receiving the final response. |
-| `cost_usd` | `model_token_cost + (web_search_calls / 1000) * vendor_price_per_1k` — see below. |
+| `cost_usd` | See cost formula below. |
 | `answer_chars` | Length of the agent's final answer text. |
 
 Cost formula:
 
 ```
-cost = (input_tokens  / 1000) * model_input_rate
-     + (output_tokens / 1000) * model_output_rate
-     + (web_search_calls / 1000) * tool_rate_per_1k
+fresh_in  = max(0, input_tokens - cached_input_tokens)
+tokens_$  = (fresh_in           / 1000) * model_input_rate
+          + (cached_input_tokens/ 1000) * model_cached_input_rate
+          + (output_tokens      / 1000) * model_output_rate
+
+tool_$    = ((bing_queries OR web_search_calls) / 1000) * tool_rate_per_1k
+
+cost      = tokens_$ + tool_$
 ```
+
+> **Fan-out matters.** Foundry's `web.run` extension is one billable "tool
+> execution" from the model's POV but can dispatch many parallel Bing queries
+> internally and merge the results into the next chat turn. That's why a single
+> Foundry web_search_call can balloon input tokens to 10k+ on the next turn and
+> why `bing_queries` (not `web_search_calls`) is the right field to bill on.
 
 Default `tool_rate_per_1k` (verified mid-2025, override via env):
 
