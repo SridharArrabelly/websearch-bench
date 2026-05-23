@@ -67,7 +67,10 @@ async def fetch_chat_span(
     if not app_id:
         return None
 
-    # The KQL counts role="tool" entries in the chat span's input message list.
+    # When multiple chat spans share a response_id (e.g. agent_framework
+    # emits its own client-side chat span AND Foundry emits a server-side
+    # one for the same call), pick the row with the MAX tool_msgs so we
+    # recover the real fan-out instead of the empty client-side view.
     kql = f"""
 let respId = '{response_id}';
 dependencies
@@ -77,10 +80,11 @@ dependencies
 | extend raw = tostring(customDimensions["gen_ai.input.messages"])
 | extend tool_msgs = array_length(extract_all(@'("role":\\s*"tool")', raw))
 | extend total_msgs = array_length(parse_json(raw))
-| project chat_span_id = id, tool_msgs, total_msgs,
-          in_tokens     = toint(customMeasurements["gen_ai.usage.input_tokens"]),
-          out_tokens    = toint(customMeasurements["gen_ai.usage.output_tokens"]),
-          cached_tokens = toint(customMeasurements["gen_ai.usage.cached_tokens"])
+| extend in_tokens     = toint(customMeasurements["gen_ai.usage.input_tokens"])
+| extend out_tokens    = toint(customMeasurements["gen_ai.usage.output_tokens"])
+| extend cached_tokens = toint(customMeasurements["gen_ai.usage.cached_tokens"])
+| top 1 by tool_msgs desc
+| project chat_span_id = id, tool_msgs, total_msgs, in_tokens, out_tokens, cached_tokens
 """.strip()
 
     url = f"{_APPINSIGHTS_BASE}/{app_id}/query"
@@ -91,6 +95,7 @@ dependencies
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
         async with aiohttp.ClientSession() as session:
+            best: ChatSpanFacts | None = None
             while time.monotonic() < deadline:
                 async with session.post(url, headers=headers, json={"query": kql}) as resp:
                     if resp.status != 200:
@@ -108,11 +113,17 @@ dependencies
                     data = await resp.json()
                     facts = _parse_chat_facts(data)
                     if facts is not None:
-                        return facts
+                        # Track the best seen so we don't regress, then keep
+                        # polling briefly in case a richer (server-side) span
+                        # ingests after a client-side one with tool_msgs=0.
+                        if best is None or facts.tool_msgs > best.tool_msgs:
+                            best = facts
+                        if best.tool_msgs > 0:
+                            return best
 
                 await asyncio.sleep(poll_interval_s)
 
-    return None
+    return best
 
 
 def _parse_chat_facts(payload: dict[str, Any]) -> ChatSpanFacts | None:

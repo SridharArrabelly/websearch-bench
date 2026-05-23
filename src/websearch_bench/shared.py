@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import os
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any
 
-from rich.console import Console
+from rich.console import Console, Group
+from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 # ---------------------------------------------------------------------------
 # Shared workload — change here, apply everywhere.
@@ -114,14 +116,86 @@ class RunMetrics:
 
 
 def print_metrics(metrics: RunMetrics, console: Console | None = None) -> None:
-    """Pretty-print a single run's metrics block."""
+    """Pretty-print a single run's metrics block.
+
+    Layout:
+        - Sectioned key/value table titled "Usage — <backend>"
+        - notes line (if any)
+        - response_id footer (if any)
+        - Answer panel (if any)
+    """
     console = console or Console()
-    table = Table(title=f"Usage — {metrics.backend}", show_header=False)
-    table.add_column("metric")
-    table.add_column("value", justify="right")
-    for k, v in asdict(metrics).items():
-        table.add_row(k, "—" if v is None else str(v))
+
+    def _num(v: int | None) -> str:
+        return "—" if v is None else f"{v:,}"
+
+    def _pct(part: int | None, whole: int | None) -> str:
+        if not part or not whole:
+            return ""
+        return f"  [dim]({part / whole:.0%} of input)[/dim]"
+
+    def _money(v: float | None) -> str:
+        return "—" if v is None else f"${v:,.4f}"
+
+    def _secs(v: float | None) -> str:
+        return "—" if v is None else f"{v:.2f} s"
+
+    table = Table(
+        title=f"[bold]Usage — {metrics.backend}[/bold]",
+        title_justify="left",
+        show_header=False,
+        box=None,
+        padding=(0, 2),
+        expand=False,
+    )
+    table.add_column("metric", style="dim", no_wrap=True)
+    table.add_column("value", justify="right", no_wrap=True)
+
+    def section(label: str) -> None:
+        table.add_row(Text(label, style="bold cyan"), "")
+
+    def row(k: str, v: str) -> None:
+        table.add_row(f"  {k}", v)
+
+    section("Identity")
+    row("backend", metrics.backend)
+    row("model", metrics.model)
+
+    section("Tokens")
+    row("input", _num(metrics.input_tokens))
+    row("  cached", f"{_num(metrics.cached_input_tokens)}{_pct(metrics.cached_input_tokens, metrics.input_tokens)}")
+    row("output", _num(metrics.output_tokens))
+    row("total", _num(metrics.total_tokens))
+
+    section("Web search")
+    row("web_search_calls", _num(metrics.web_search_calls))
+    row("bing_queries", _num(metrics.bing_queries))
+
+    section("Performance")
+    row("latency", _secs(metrics.latency_s))
+    row("cost", _money(metrics.cost_usd))
+
+    section("Output")
+    row("answer_chars", _num(metrics.answer_chars))
+
     console.print(table)
+
+    if metrics.notes:
+        console.print(Text.from_markup(f"[yellow]notes:[/yellow] {metrics.notes}"))
+    if metrics.response_id:
+        console.print(Text.from_markup(f"[dim]response_id: {metrics.response_id}[/dim]"))
+
+    if metrics.answer:
+        console.print(
+            Panel(
+                metrics.answer,
+                title="Answer",
+                title_align="left",
+                border_style="dim",
+                padding=(0, 1),
+            )
+        )
+    console.print()
 
 
 class Timer:
