@@ -1,4 +1,4 @@
-# foundry-websearch-tool
+# websearch-bench
 
 A small Python package — **`websearch_bench`** — that runs the *same* grounded
 web-search question through every popular SDK surface and prints a side-by-side
@@ -26,7 +26,7 @@ numbers are comparable. All shared workload lives in
 ## Repository layout
 
 ```
-foundry-websearch-tool/
+websearch-bench/
 ├── README.md
 ├── pyproject.toml
 ├── uv.lock
@@ -78,7 +78,7 @@ Adding a new backend = one file in `backends/` + one line in
 ## Setup
 
 ```powershell
-cd C:\path\to\foundry-websearch-tool
+cd C:\path\to\websearch-bench
 uv sync                                  # creates .venv, installs the package + deps
 Copy-Item .env.example .env              # then edit .env (see "Environment" below)
 az login
