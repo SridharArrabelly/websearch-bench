@@ -1,4 +1,31 @@
-"""Azure AI Foundry agent grounded with Bing Web Search."""
+"""Cost-optimised variant of foundry-ws-bing.
+
+Same plumbing as :mod:`foundry_ws_bing` but with three changes designed to
+minimise Bing fan-out and input-token bloat:
+
+1. ``max_tool_calls=1`` on the Responses request — hard cap on how many
+   ``web_search_call`` rounds the model can emit. Eliminates "refine the
+   query and search again" loops, which are the dominant source of input
+   token growth (each round re-feeds the conversation including all prior
+   Bing results).
+2. ``parallel_tool_calls=False`` — additionally prevents concurrent
+   tool execution; defence in depth alongside ``max_tool_calls``.
+3. ``tool_choice={"type": "web_search"}`` — forces exactly one
+   ``web_search`` invocation instead of letting the model decide whether
+   to search at all.
+4. Stricter system prompt (``SHARED_INSTRUCTIONS_SINGLE_QUERY``) telling
+   the model to craft a single optimised search phrase.
+
+Caveats:
+
+- Foundry's server-side ``web.run`` extension still fans one
+  ``web_search_call`` into N Bing transactions internally; the API has no
+  knob to control that. So this backend reduces fan-out at the *model*
+  layer (rounds), not at the *Bing* layer (transactions per round).
+- The single-query constraint can hurt answer quality on multi-faceted
+  questions. The whole point of this backend is to put the trade-off in
+  hard numbers next to the unconstrained ``foundry-ws-bing``.
+"""
 
 from __future__ import annotations
 
@@ -21,7 +48,7 @@ from websearch_bench.shared import (
     ALLOWED_DOMAINS,
     MODEL,
     SEARCH_CONTEXT_SIZE,
-    SHARED_INSTRUCTIONS,
+    SHARED_INSTRUCTIONS_SINGLE_QUERY,
     SHARED_QUERY,
     USER_CITY,
     USER_COUNTRY,
@@ -35,7 +62,7 @@ from websearch_bench.shared import (
     usage_from_openai_response,
 )
 
-BACKEND_NAME = "foundry-ws-bing"
+BACKEND_NAME = "foundry-ws-bing-cheap"
 REQUIRED_ENV: tuple[str, ...] = ("PROJECT_ENDPOINT",)
 
 console = Console()
@@ -52,10 +79,10 @@ async def run() -> RunMetrics:
         openai = project.get_openai_client()
 
         agent = await project.agents.create_version(
-            agent_name="foundry-ws-bing",
+            agent_name="foundry-ws-bing-cheap",
             definition=PromptAgentDefinition(
                 model=MODEL,
-                instructions=SHARED_INSTRUCTIONS,
+                instructions=SHARED_INSTRUCTIONS_SINGLE_QUERY,
                 tools=[
                     WebSearchTool(
                         user_location=WebSearchApproximateLocation(
@@ -68,7 +95,7 @@ async def run() -> RunMetrics:
                     )
                 ],
             ),
-            description="Foundry Bing Web Search benchmark backend.",
+            description="Cost-optimised Foundry Bing Web Search backend (max_tool_calls=1).",
         )
         console.print(
             f"[dim]Agent created id={agent.id} name={agent.name} version={agent.version}[/dim]"
@@ -78,6 +105,9 @@ async def run() -> RunMetrics:
         with Timer() as t:
             response = await openai.responses.create(
                 input=SHARED_QUERY,
+                max_tool_calls=1,
+                parallel_tool_calls=False,
+                tool_choice={"type": "web_search"},
                 extra_body={
                     "agent_reference": {"name": agent.name, "type": "agent_reference"}
                 },
@@ -102,7 +132,7 @@ async def run() -> RunMetrics:
         latency_s=round(t.elapsed, 2),
         answer_chars=len(answer),
         answer=answer,
-        notes="bing_queries from response is lower bound — server fan-out hidden; see App Insights",
+        notes="max_tool_calls=1 + tool_choice=web_search; bing_queries lower bound — server fan-out hidden",
     )
     metrics.cost_usd = round(
         estimate_cost(
@@ -117,8 +147,6 @@ async def run() -> RunMetrics:
         4,
     )
 
-    # Defer reconciliation: compare.py will batch-reconcile all backends at
-    # the end (so telemetry has time to ingest).
     metrics.response_id = getattr(response, "id", None)
 
     print_metrics(metrics, console)
