@@ -380,14 +380,18 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
     sum_queries = 0
     for item in output:
         item_type = getattr(item, "type", None)
-        if item_type not in ("web_search_call", "bing_grounding_call"):
+        if item_type not in (
+            "web_search_call",
+            "bing_grounding_call",
+            "bing_custom_search_call",
+        ):
             continue
-        # BingGroundingTool: each bing_grounding_call item == exactly one Bing
-        # API call regardless of how many strings appear in action.queries
-        # (verified against App Insights: 1 remote_functions.bing_grounding
+        # BingGroundingTool / BingCustomSearchPreviewTool: each *_call item ==
+        # exactly one Bing API call regardless of how many strings appear in
+        # action.queries (verified against App Insights: 1 remote_functions.*
         # dependency span per item). Don't sum action.queries here or we
         # inflate the billable count.
-        if item_type == "bing_grounding_call":
+        if item_type in ("bing_grounding_call", "bing_custom_search_call"):
             sum_queries += 1
             continue
         action = getattr(item, "action", None)

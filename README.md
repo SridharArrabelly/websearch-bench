@@ -14,6 +14,7 @@ ecosystem, and each one bills differently:
 | --- | --- | --- | --- |
 | `foundry-ws-bing` | `azure-ai-projects` | `WebSearchTool` on a Foundry `PromptAgentDefinition` (Bing Web Search) | Grounding with Bing Search |
 | `foundry-bing-grounding` | `azure-ai-projects` | Legacy `BingGroundingTool` on a `PromptAgentDefinition` (Grounding with Bing Search; single-shot, no `web.run` fan-out) | Grounding with Bing Search (typically ~5K input tokens + 1 Bing call vs ~15K + N for `foundry-ws-bing`) |
+| `foundry-bing-grounding-custom` | `azure-ai-projects` | Legacy `BingCustomSearchPreviewTool` on a `PromptAgentDefinition` (Grounding with Bing Custom Search **preview**; single-shot, no `web.run` fan-out) | Grounding with Bing Custom Search (single-shot variant; domain restriction lives on the Bing Custom instance) |
 | `foundry-ws-bingcustom` | `azure-ai-projects` | `WebSearchTool` + `WebSearchConfiguration` (Bing Custom Search) | Grounding with Bing Custom Search |
 | `agentfx-bing` | `agent-framework-foundry` | `FoundryChatClient.get_web_search_tool(...)` wired into an `Agent` | Grounding with Bing Search |
 | `agentfx-bing-cached` | `agent-framework-foundry` + Redis | Same as above, with Redis answer cache | 0 on cache hit; otherwise as above |
@@ -26,10 +27,10 @@ workload lives in [`src/websearch_bench/shared.py`](src/websearch_bench/shared.p
 Two of the per-tool knobs can't be wired *uniformly* across SDKs because the
 SDKs themselves don't all expose them. Here's the honest truth:
 
-| Setting | `foundry-bing-grounding` | `foundry-ws-bing` | `foundry-ws-bingcustom` | `agentfx-bing*` | `openai-ws` |
-| --- | --- | --- | --- | --- | --- |
-| `SEARCH_CONTEXT_SIZE` (`shared.py`) | n/a — `BingGroundingTool` has no context-size knob | ✅ passed to `WebSearchTool` | ✅ passed to `WebSearchTool` | ✅ passed via `get_web_search_tool` | ❌ not accepted by the OpenAI Responses `web_search` `filters` block |
-| `ALLOWED_DOMAINS` (`shared.py`) | n/a — use a Bing Custom Search connection if you need domain restriction | ✅ passed as `WebSearchToolFilters(allowed_domains=…)` | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed via `get_web_search_tool(allowed_domains=…)` | ✅ passed as `filters.allowed_domains` |
+| Setting | `foundry-bing-grounding` | `foundry-bing-grounding-custom` | `foundry-ws-bing` | `foundry-ws-bingcustom` | `agentfx-bing*` | `openai-ws` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `SEARCH_CONTEXT_SIZE` (`shared.py`) | n/a — `BingGroundingTool` has no context-size knob | n/a — `BingCustomSearchPreviewTool` has no context-size knob | ✅ passed to `WebSearchTool` | ✅ passed to `WebSearchTool` | ✅ passed via `get_web_search_tool` | ❌ not accepted by the OpenAI Responses `web_search` `filters` block |
+| `ALLOWED_DOMAINS` (`shared.py`) | n/a — use a Bing Custom Search connection if you need domain restriction | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed as `WebSearchToolFilters(allowed_domains=…)` | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed via `get_web_search_tool(allowed_domains=…)` | ✅ passed as `filters.allowed_domains` |
 
 So for a strictly apples-to-apples comparison, either accept the limitations
 above or pin the Bing Custom Search instance to the same domain list you've
@@ -56,6 +57,7 @@ websearch-bench/
         └── backends/
             ├── __init__.py              # registry of backends
             ├── foundry_bing_grounding.py    # legacy BingGroundingTool (single-shot)
+            ├── foundry_bing_grounding_custom.py  # legacy BingCustomSearchPreviewTool
             ├── foundry_ws_bing.py
             ├── foundry_ws_bingcustom.py
             ├── agentfx_ws.py
@@ -108,6 +110,7 @@ Minimum env vars per backend (set in `.env`):
 | Backend | Required env vars |
 | --- | --- |
 | `foundry-bing-grounding` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CONNECTION_NAME` |
+| `foundry-bing-grounding-custom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_CONNECTION_NAME`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `foundry-ws-bing` | `PROJECT_ENDPOINT`, `MODEL` |
 | `foundry-ws-bingcustom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `agentfx-bing` | `PROJECT_ENDPOINT`, `MODEL` |
@@ -132,6 +135,7 @@ because it bills your OpenAI subscription separately:
 | Flag                          | Default     | To run                          | To skip                          |
 | ----------------------------- | ----------- | ------------------------------- | -------------------------------- |
 | `ENABLE_FOUNDRY_BING_GROUNDING`| **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
+| `ENABLE_FOUNDRY_BING_GROUNDING_CUSTOM`| **enabled** | leave unset (or set `=1`) | set `=0` / `false` / `no` / `off`|
 | `ENABLE_FOUNDRY_WS_BING`      | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
 | `ENABLE_FOUNDRY_WS_BINGCUSTOM`| **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
 | `ENABLE_AGENTFX_BING`         | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
@@ -185,6 +189,7 @@ fail the run, and they still appear (greyed out) in both outputs.
 
 ```powershell
 uv run python -m websearch_bench.backends.foundry_bing_grounding
+uv run python -m websearch_bench.backends.foundry_bing_grounding_custom
 uv run python -m websearch_bench.backends.foundry_ws_bing
 uv run python -m websearch_bench.backends.foundry_ws_bingcustom
 uv run python -m websearch_bench.backends.agentfx_ws

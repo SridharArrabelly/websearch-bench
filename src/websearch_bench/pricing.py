@@ -118,7 +118,13 @@ def tool_cost(backend: str, web_search_calls: int | None) -> float:
     Bing transactions.
     """
     calls = web_search_calls or 0
-    if backend.startswith("foundry-ws-bingcustom"):
+    # Bing Custom Search (both the WebSearchTool variant and the legacy
+    # BingCustomSearchPreviewTool) — must be checked before the generic
+    # foundry-bing prefix.
+    if (
+        backend.startswith("foundry-ws-bingcustom")
+        or backend.startswith("foundry-bing-grounding-custom")
+    ):
         return calls * BING_CUSTOM_USD_PER_1K / 1000.0
     if (
         backend.startswith("foundry-bing")
