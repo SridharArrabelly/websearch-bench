@@ -321,27 +321,34 @@ Override per-1,000-call rates via env vars (see `.env.example`).
 
 ### How tool cost is routed (and why it matters)
 
-The two tool surfaces bill against **entirely different resources**, and this
-materially changes the reported cost. We verified this empirically by running
-the benchmark and comparing the reported `bing_queries` count to the *real*
-`TotalCalls` metric on the user's `Microsoft.Bing/accounts` resources via
-Azure Monitor (see [Validating real Bing usage](#validating-real-bing-usage)).
+Per Microsoft's [Web search with the Responses API docs](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/web-search):
 
-| Tool surface | Backends | Billed against | Quantity used |
-| --- | --- | --- | --- |
-| `BingGroundingTool` / `BingCustomSearchPreviewTool` | `foundry-bing-grounding`, `foundry-bing-grounding-custom` | Your **own** `Microsoft.Bing/accounts` resource ($35 / 1,000 queries) | `bing_queries` (each Foundry tool call = 1 increment on your Bing resource) |
-| `WebSearchTool` (Foundry hosted) | `foundry-ws-bing*`, `foundry-ws-bingcustom`, `agentfx-*` | **OpenAI's** hidden Bing infrastructure, billed as the OpenAI `web_search` tool ($10 / 1,000 calls) | `web_search_calls` (the *outer* tool call) |
-| `web_search` (OpenAI direct) | `openai-ws` | OpenAI `web_search` tool ($10 / 1,000 calls) | `web_search_calls` |
+> "Web Search uses Grounding with Bing Search and/or Grounding with Bing Custom Search […] Search actions incur tool call costs."
+
+So **both** Foundry tool families bill at the Grounding-with-Bing rate
+($35 / 1,000) — but they bill from *different places* and against
+*different quantities*:
+
+| Tool surface | Backends | Billed where | Quantity used | Rate |
+| --- | --- | --- | --- | --- |
+| `BingGroundingTool` / `BingCustomSearchPreviewTool` | `foundry-bing-grounding`, `foundry-bing-grounding-custom` | Your **own** `Microsoft.Bing/accounts` resource (its `TotalCalls` metric increments — verifiable via `bing_usage.py`) | `bing_queries` (each tool call = 1 Bing call) | $35/1K |
+| `WebSearchTool` (Foundry-hosted) | `foundry-ws-bing*`, `foundry-ws-bingcustom`, `agentfx-*` | Microsoft-managed Bing infra (charge appears on your **Foundry / Cognitive Services** account bill as a "Grounding with Bing Search" line item — `bing_usage.py` does **not** see it) | `web_search_calls` (the *outer* tool call; server-side fan-out isn't separately metered to the caller) | $35/1K |
+| `web_search` (OpenAI direct) | `openai-ws` | OpenAI Responses API `web_search` tool | `web_search_calls` | $10/1K |
 
 The crucial nuance: Foundry's server-side `web.run` fan-out (which can turn
-one `web_search_call` into 14 Bing transactions in the App Insights span) is
-*not* billed against your Bing resource. The user pays per **outer**
-`web_search_call`, regardless of how many Bing queries OpenAI runs internally.
+one `web_search_call` into many Bing transactions in the App Insights span) is
+*not* separately billed to the caller — Microsoft charges per outer
+`web_search_call` action. That's why `web_search_calls` is the right quantity
+for the WebSearchTool family, not `bing_queries`.
 
-If `tool_cost` accidentally bills `web_search_calls × $35/1K` for a
-WebSearchTool backend, the reported cost can be ~10× too high. This is why
-the harness now strictly routes by tool surface (see `pricing.py::tool_cost`)
-and exposes `bing_usage.py` so you can verify against your real bill.
+> ⚠️ **Caveat — awaiting vendor confirmation.** Microsoft docs confirm
+> WebSearchTool incurs Grounding-with-Bing tool-call costs but don't
+> explicitly state the per-call quantity (outer call vs internal fan-out).
+> The current `tool_cost` implementation assumes per *outer* call, which
+> aligns with how the OpenAI Responses `web_search_call` action is modelled
+> and is the only quantity exposed to the caller. If you receive a Foundry
+> invoice that shows otherwise, override
+> `BING_GROUNDING_USD_PER_1K` and re-evaluate.
 
 ## Validating real Bing usage
 
@@ -351,8 +358,10 @@ The in-process telemetry can't tell the whole story:
 - agent_framework backends only emit a single outer `search_tool_calls`
   count → Foundry's server-side fan-out is invisible to their tracer.
 
-The **billing truth** lives on the `Microsoft.Bing/accounts` resource as the
-`TotalCalls` platform metric. One Bing API call = one increment.
+For the **legacy direct tools** (`foundry-bing-grounding*`), the billing
+truth lives on the `Microsoft.Bing/accounts` resource as the `TotalCalls`
+platform metric. One Bing API call = one increment. That's what
+`bing_usage.py` queries:
 
 ```powershell
 # Last 30 minutes (default)
@@ -366,6 +375,15 @@ uv run python -m websearch_bench.bing_usage --since 2h
 uv run python -m websearch_bench.bing_usage \
   --start 2026-05-24T09:00:00Z --end 2026-05-24T09:15:00Z
 ```
+
+> ⚠️ **`bing_usage.py` does NOT capture WebSearchTool charges.**
+> WebSearchTool / Responses `web_search` routes through Microsoft-managed
+> Bing infrastructure, not the user's `Microsoft.Bing/accounts` resource,
+> so its `TotalCalls` metric won't move. To audit WebSearchTool spend, open
+> Azure Cost Analysis on your **Foundry / Cognitive Services account** and
+> filter the meter to "Grounding with Bing Search" (or "Grounding with Bing
+> Custom Search"). The harness's reported `cost` for those backends is the
+> best client-side estimate available.
 
 Required env vars:
 
@@ -382,11 +400,9 @@ Recommended workflow when comparing backends:
 2. Run `uv run python -m websearch_bench.compare`.
 3. Wait ~3 minutes (Azure Monitor metric ingestion lag).
 4. Run `uv run python -m websearch_bench.bing_usage --since 5m`.
-5. If `TotalCalls` is ~0 across runs of WebSearchTool backends, that confirms
-   those backends are *not* billing against your Bing resource (they're going
-   through OpenAI's hosted infra instead).
-6. If `TotalCalls` matches the sum of `bing_queries` from your
-   `BingGroundingTool` backends only, the routing is correct.
+5. `TotalCalls` should equal the sum of `bing_queries` from your
+   `foundry-bing-grounding*` rows only. WebSearchTool rows contribute
+   zero to this metric — that's expected, not a bug.
 
 ### Cache-only backend: extras
 

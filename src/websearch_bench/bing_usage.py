@@ -1,20 +1,26 @@
 """Query Azure Monitor for *true* Bing API call counts.
 
-In-process telemetry can't tell the whole story:
+Scope: this script only sees billing for the **legacy direct tools**
+(``BingGroundingTool`` / ``BingCustomSearchPreviewTool`` — the
+``foundry-bing-grounding*`` backends), because those call the user's
+*own* ``Microsoft.Bing/accounts`` resource and increment its
+``TotalCalls`` metric.
 
-* The Foundry SDK backends (``foundry-ws-bing*``) emit a separate App Insights
-  span for every Bing tool invocation, so we see fan-out in ``bing_q``.
-* The agent_framework backends (``agentfx-bing*``) only emit a single outer
-  ``search_tool_calls`` count — Foundry's server-side fan-out is invisible to
-  the tracer.
+It does **NOT** see billing for the ``WebSearchTool`` family
+(``foundry-ws-*``, ``agentfx-*``) — those route through Microsoft-managed
+Bing infrastructure, charged on the user's Foundry / Cognitive Services
+account bill under the "Grounding with Bing Search" meter. To audit that
+spend, use Azure Cost Analysis on the Foundry account and filter the
+meter accordingly.
 
-Whatever the SDK reports, the *billing-side* truth lives on the
-``Microsoft.Bing/accounts`` resource as the ``TotalCalls`` platform metric.
-One Bing API call = one increment, regardless of which SDK surfaced it.
+Why bother running this at all? Two reasons:
 
-This module queries Azure Monitor for ``TotalCalls`` on your configured Bing
-resources over a chosen window. Use it to validate (or refute) the
-``bing_q`` numbers in the benchmark table.
+1. ``agentfx-*`` backends only emit a single outer ``search_tool_calls``
+   count — Foundry's server-side fan-out is invisible to their tracer —
+   so comparing direct-tool ``bing_queries`` to this metric is the only
+   client-side way to know whether the harness's reported counts match
+   the real bill (for the direct tools).
+2. It gives a quick subscription-level rate-of-spend sanity check.
 
 Usage::
 
