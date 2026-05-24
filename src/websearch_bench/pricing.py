@@ -38,6 +38,8 @@ import os
 MODEL_PRICING_PER_1K: dict[str, dict[str, float]] = {
     "gpt-5.1":      {"input": 0.00125, "cached_input": 0.000125, "output": 0.010},
     "gpt-5.1-mini": {"input": 0.00025, "cached_input": 0.000025, "output": 0.002},
+    "gpt-4.1":      {"input": 0.00200, "cached_input": 0.000500, "output": 0.008},
+    "gpt-4.1-mini": {"input": 0.000400, "cached_input": 0.000100, "output": 0.001600},
     "gpt-4o":       {"input": 0.00250, "cached_input": 0.00125,  "output": 0.010},
     "gpt-4o-mini":  {"input": 0.000150, "cached_input": 0.000075, "output": 0.000600},
 }

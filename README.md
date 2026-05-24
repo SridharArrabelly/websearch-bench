@@ -13,6 +13,7 @@ ecosystem, and each one bills differently:
 | Backend | Library | Tool plumbing | Per-call charge (besides model tokens) |
 | --- | --- | --- | --- |
 | `foundry-ws-bing` | `azure-ai-projects` | `WebSearchTool` on a Foundry `PromptAgentDefinition` (Bing Web Search) | Grounding with Bing Search |
+| `foundry-ws-bing-fast` | `azure-ai-projects` | Same as `foundry-ws-bing` but pinned to a **non-reasoning** model (`MODEL_FAST`, default `gpt-4.1-mini`) — tests OpenAI's "non-reasoning web search" path (1 search, no fan-out) | Grounding with Bing Search (typically 1 Bing call + much smaller input-token bill than `foundry-ws-bing` on `gpt-5.1`) |
 | `foundry-bing-grounding` | `azure-ai-projects` | Legacy `BingGroundingTool` on a `PromptAgentDefinition` (Grounding with Bing Search; single-shot, no `web.run` fan-out) | Grounding with Bing Search (typically ~5K input tokens + 1 Bing call vs ~15K + N for `foundry-ws-bing`) |
 | `foundry-bing-grounding-custom` | `azure-ai-projects` | Legacy `BingCustomSearchPreviewTool` on a `PromptAgentDefinition` (Grounding with Bing Custom Search **preview**; single-shot, no `web.run` fan-out) | Grounding with Bing Custom Search (single-shot variant; domain restriction lives on the Bing Custom instance) |
 | `foundry-ws-bingcustom` | `azure-ai-projects` | `WebSearchTool` + `WebSearchConfiguration` (Bing Custom Search) | Grounding with Bing Custom Search |
@@ -59,6 +60,7 @@ websearch-bench/
             ├── foundry_bing_grounding.py    # legacy BingGroundingTool (single-shot)
             ├── foundry_bing_grounding_custom.py  # legacy BingCustomSearchPreviewTool
             ├── foundry_ws_bing.py
+            ├── foundry_ws_bing_fast.py      # WebSearchTool on a non-reasoning model
             ├── foundry_ws_bingcustom.py
             ├── agentfx_ws.py
             ├── agentfx_ws_cached.py
@@ -112,6 +114,7 @@ Minimum env vars per backend (set in `.env`):
 | `foundry-bing-grounding` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CONNECTION_NAME` |
 | `foundry-bing-grounding-custom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `foundry-ws-bing` | `PROJECT_ENDPOINT`, `MODEL` |
+| `foundry-ws-bing-fast` | `PROJECT_ENDPOINT`, `MODEL_FAST` (default `gpt-4.1-mini`) |
 | `foundry-ws-bingcustom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `agentfx-bing` | `PROJECT_ENDPOINT`, `MODEL` |
 | `agentfx-bing-cached` | above + `REDIS_URL` (and a running Redis) |
@@ -137,6 +140,7 @@ because it bills your OpenAI subscription separately:
 | `ENABLE_FOUNDRY_BING_GROUNDING`| **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
 | `ENABLE_FOUNDRY_BING_GROUNDING_CUSTOM`| **enabled** | leave unset (or set `=1`) | set `=0` / `false` / `no` / `off`|
 | `ENABLE_FOUNDRY_WS_BING`      | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
+| `ENABLE_FOUNDRY_WS_BING_FAST` | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
 | `ENABLE_FOUNDRY_WS_BINGCUSTOM`| **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
 | `ENABLE_AGENTFX_BING`         | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
 | `ENABLE_AGENTFX_BING_CACHED`  | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
@@ -191,6 +195,7 @@ fail the run, and they still appear (greyed out) in both outputs.
 uv run python -m websearch_bench.backends.foundry_bing_grounding
 uv run python -m websearch_bench.backends.foundry_bing_grounding_custom
 uv run python -m websearch_bench.backends.foundry_ws_bing
+uv run python -m websearch_bench.backends.foundry_ws_bing_fast
 uv run python -m websearch_bench.backends.foundry_ws_bingcustom
 uv run python -m websearch_bench.backends.agentfx_ws
 uv run python -m websearch_bench.backends.agentfx_ws_cached

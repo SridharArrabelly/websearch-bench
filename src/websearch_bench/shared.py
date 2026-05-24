@@ -39,6 +39,11 @@ SHARED_INSTRUCTIONS: str = (
 # Model. Override via MODEL env var. Keep the same model across backends.
 MODEL: str = os.getenv("MODEL", "gpt-5.1")
 
+# A non-reasoning model used by the *-fast WebSearchTool variant to test
+# OpenAI's "non-reasoning web search" path (1 search, no fan-out).
+# Override via MODEL_FAST env var. Must be deployed in your Foundry project.
+MODEL_FAST: str = os.getenv("MODEL_FAST", "gpt-4.1-mini")
+
 # The OpenAI direct backend can only use OpenAI-hosted models; choose a
 # comparable one with OPENAI_MODEL.
 OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5.1")

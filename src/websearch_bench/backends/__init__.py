@@ -19,6 +19,7 @@ _BACKEND_MODULES: list[str] = [
     "websearch_bench.backends.foundry_bing_grounding",
     "websearch_bench.backends.foundry_bing_grounding_custom",
     "websearch_bench.backends.foundry_ws_bing",
+    "websearch_bench.backends.foundry_ws_bing_fast",
     "websearch_bench.backends.foundry_ws_bingcustom",
     "websearch_bench.backends.agentfx_ws",
     "websearch_bench.backends.agentfx_ws_cached",
