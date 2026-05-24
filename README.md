@@ -52,6 +52,7 @@ websearch-bench/
         ├── __main__.py                  # python -m websearch_bench  → compare
         ├── shared.py                    # query, model, instructions, RunMetrics
         ├── pricing.py                   # USD constants + estimate_cost()
+        ├── bing_usage.py                # Azure Monitor TotalCalls query — validates real Bing billing
         ├── auth.py                      # make_credential() — narrowed DefaultAzureCredential
         ├── appinsights.py               # fetch_chat_span() + reconcile_metrics()
         ├── compare.py                   # harness — runs all backends, writes results.csv/html
@@ -317,6 +318,75 @@ Verify against the official pages before quoting a customer:
 - OpenAI Responses API + `web_search`: <https://openai.com/api/pricing/>
 
 Override per-1,000-call rates via env vars (see `.env.example`).
+
+### How tool cost is routed (and why it matters)
+
+The two tool surfaces bill against **entirely different resources**, and this
+materially changes the reported cost. We verified this empirically by running
+the benchmark and comparing the reported `bing_queries` count to the *real*
+`TotalCalls` metric on the user's `Microsoft.Bing/accounts` resources via
+Azure Monitor (see [Validating real Bing usage](#validating-real-bing-usage)).
+
+| Tool surface | Backends | Billed against | Quantity used |
+| --- | --- | --- | --- |
+| `BingGroundingTool` / `BingCustomSearchPreviewTool` | `foundry-bing-grounding`, `foundry-bing-grounding-custom` | Your **own** `Microsoft.Bing/accounts` resource ($35 / 1,000 queries) | `bing_queries` (each Foundry tool call = 1 increment on your Bing resource) |
+| `WebSearchTool` (Foundry hosted) | `foundry-ws-bing*`, `foundry-ws-bingcustom`, `agentfx-*` | **OpenAI's** hidden Bing infrastructure, billed as the OpenAI `web_search` tool ($10 / 1,000 calls) | `web_search_calls` (the *outer* tool call) |
+| `web_search` (OpenAI direct) | `openai-ws` | OpenAI `web_search` tool ($10 / 1,000 calls) | `web_search_calls` |
+
+The crucial nuance: Foundry's server-side `web.run` fan-out (which can turn
+one `web_search_call` into 14 Bing transactions in the App Insights span) is
+*not* billed against your Bing resource. The user pays per **outer**
+`web_search_call`, regardless of how many Bing queries OpenAI runs internally.
+
+If `tool_cost` accidentally bills `web_search_calls × $35/1K` for a
+WebSearchTool backend, the reported cost can be ~10× too high. This is why
+the harness now strictly routes by tool surface (see `pricing.py::tool_cost`)
+and exposes `bing_usage.py` so you can verify against your real bill.
+
+## Validating real Bing usage
+
+The in-process telemetry can't tell the whole story:
+
+- Foundry SDK backends emit a span per Bing call → `bing_q` is accurate.
+- agent_framework backends only emit a single outer `search_tool_calls`
+  count → Foundry's server-side fan-out is invisible to their tracer.
+
+The **billing truth** lives on the `Microsoft.Bing/accounts` resource as the
+`TotalCalls` platform metric. One Bing API call = one increment.
+
+```powershell
+# Last 30 minutes (default)
+uv run python -m websearch_bench.bing_usage
+
+# Last N minutes / hours / days
+uv run python -m websearch_bench.bing_usage --since 10m
+uv run python -m websearch_bench.bing_usage --since 2h
+
+# Explicit ISO-8601 window
+uv run python -m websearch_bench.bing_usage \
+  --start 2026-05-24T09:00:00Z --end 2026-05-24T09:15:00Z
+```
+
+Required env vars:
+
+```dotenv
+AZURE_SUBSCRIPTION_ID=<sub id>
+# Optional — if unset, the script auto-discovers Microsoft.Bing/accounts via `az`
+BING_GROUNDING_RESOURCE_ID=/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Bing/accounts/<name>
+BING_CUSTOM_RESOURCE_ID=/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Bing/accounts/<name>
+```
+
+Recommended workflow when comparing backends:
+
+1. Note the current time.
+2. Run `uv run python -m websearch_bench.compare`.
+3. Wait ~3 minutes (Azure Monitor metric ingestion lag).
+4. Run `uv run python -m websearch_bench.bing_usage --since 5m`.
+5. If `TotalCalls` is ~0 across runs of WebSearchTool backends, that confirms
+   those backends are *not* billing against your Bing resource (they're going
+   through OpenAI's hosted infra instead).
+6. If `TotalCalls` matches the sum of `bing_queries` from your
+   `BingGroundingTool` backends only, the routing is correct.
 
 ### Cache-only backend: extras
 

@@ -111,31 +111,48 @@ def model_token_cost(
     return cost
 
 
-def tool_cost(backend: str, web_search_calls: int | None) -> float:
+def tool_cost(
+    backend: str,
+    web_search_calls: int | None,
+    bing_queries: int | None = None,
+) -> float:
     """USD cost for the per-call charge of the web-search tool of this backend.
 
-    ``web_search_calls`` here means *billable* Bing/web-search transactions —
-    pass ``bing_queries`` (when known) for an accurate Foundry bill, since
-    Foundry's server-side web.run can fan out one model-level call into many
-    Bing transactions.
+    Two distinct billing surfaces, established empirically against Azure Monitor
+    ``Microsoft.Bing/accounts`` TotalCalls (see ``bing_usage.py``):
+
+    1. **BingGroundingTool / BingCustomSearchPreviewTool** (the
+       ``foundry-bing-grounding*`` backends) bill against the user's *own*
+       ``Microsoft.Bing/accounts`` resource at the Grounding-with-Bing rate
+       ($35 / 1,000 queries). Each Foundry tool call → exactly 1 increment on
+       that resource. Use ``bing_queries`` (which matches that count).
+
+    2. **WebSearchTool** (everything else — ``foundry-ws-*``, ``agentfx-*``,
+       ``openai-ws``) routes through OpenAI's hidden Bing infrastructure and
+       is billed as the OpenAI ``web_search`` tool ($10 / 1,000 calls per the
+       Responses API pricing page). Foundry's internal ``web.run`` fan-out
+       is invisible to the user's Bing resource — those fan-out queries are
+       *not* billed against your Microsoft.Bing/accounts resource. The user
+       pays per *outer* ``web_search_call``, so ``bing_queries`` is the wrong
+       quantity here; use ``web_search_calls``.
     """
-    calls = web_search_calls or 0
-    # Bing Custom Search (both the WebSearchTool variant and the legacy
-    # BingCustomSearchPreviewTool) — must be checked before the generic
-    # foundry-bing prefix.
-    if (
-        backend.startswith("foundry-ws-bingcustom")
-        or backend.startswith("foundry-bing-grounding-custom")
-    ):
+    # BingGroundingTool family — user's own Bing resource, billed per Bing call.
+    if backend.startswith("foundry-bing-grounding-custom"):
+        calls = bing_queries if bing_queries is not None else (web_search_calls or 0)
         return calls * BING_CUSTOM_USD_PER_1K / 1000.0
-    if (
-        backend.startswith("foundry-bing")
-        or backend.startswith("foundry-ws-bing")
-        or backend.startswith("agentfx")
-    ):
+    if backend.startswith("foundry-bing-grounding") or backend.startswith("foundry-bing"):
+        calls = bing_queries if bing_queries is not None else (web_search_calls or 0)
         return calls * BING_GROUNDING_USD_PER_1K / 1000.0
-    if backend.startswith("openai-ws"):
+
+    # WebSearchTool family — OpenAI web_search billing, per outer call only.
+    if (
+        backend.startswith("foundry-ws-")
+        or backend.startswith("agentfx")
+        or backend.startswith("openai-ws")
+    ):
+        calls = web_search_calls or 0
         return calls * OPENAI_WEB_SEARCH_USD_PER_1K / 1000.0
+
     return 0.0
 
 
@@ -154,17 +171,21 @@ def estimate_cost(
 ) -> float:
     """USD estimate for a single run. = model token cost + per-call tool cost.
 
-    Tool cost is billed against ``bing_queries`` when known (the real Bing
-    transaction count from Foundry's web.run fan-out), otherwise against
-    ``web_search_calls`` (the model-level call count).
+    Tool cost routing (see ``tool_cost`` for details):
+
+    * BingGroundingTool backends bill against the user's Bing resource, so
+      ``bing_queries`` (the real Bing transaction count from Foundry's
+      ``web.run`` span) is the right billable quantity.
+    * WebSearchTool backends bill via OpenAI's hosted ``web_search`` tool,
+      which charges per *outer* tool call — not per internal Bing fan-out.
+      ``web_search_calls`` is the right quantity. ``bing_queries`` for these
+      backends is observed-only (telemetry), not billable.
     """
-    if bing_queries is not None:
-        calls = bing_queries
-    elif web_search_calls is not None:
-        calls = web_search_calls
-    else:
-        calls = search_calls
     return (
         model_token_cost(model, input_tokens, output_tokens, cached_input_tokens)
-        + tool_cost(backend, calls)
+        + tool_cost(
+            backend,
+            web_search_calls if web_search_calls is not None else search_calls,
+            bing_queries,
+        )
     )
