@@ -59,7 +59,7 @@ USER_COUNTRY: str = "ZA"
 USER_CITY: str = "Johannesburg"
 USER_REGION: str = "Gauteng"
 ALLOWED_DOMAINS: list[str] = ["www.sars.gov.za"]
-SEARCH_CONTEXT_SIZE: str = "medium"  # one of: "low" | "medium" | "high"
+SEARCH_CONTEXT_SIZE: str = "low"  # one of: "low" | "medium" | "high"
 
 
 # ---------------------------------------------------------------------------
