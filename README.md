@@ -110,7 +110,7 @@ Minimum env vars per backend (set in `.env`):
 | Backend | Required env vars |
 | --- | --- |
 | `foundry-bing-grounding` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CONNECTION_NAME` |
-| `foundry-bing-grounding-custom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_CONNECTION_NAME`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
+| `foundry-bing-grounding-custom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `foundry-ws-bing` | `PROJECT_ENDPOINT`, `MODEL` |
 | `foundry-ws-bingcustom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `agentfx-bing` | `PROJECT_ENDPOINT`, `MODEL` |

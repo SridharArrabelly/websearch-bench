@@ -14,9 +14,10 @@ https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/bing-tools?p
 
 Required env vars:
     PROJECT_ENDPOINT                    — Foundry project endpoint
-    BING_CUSTOM_CONNECTION_NAME         — name of the Bing Custom Search
-                                          connection on the project (resolved
-                                          via ``project.connections.get(NAME)``)
+    BING_CUSTOM_SEARCH_CONNECTION_ID    — full ARM connection ID of the Bing
+                                          Custom Search resource on the
+                                          project (passed straight to
+                                          ``project_connection_id``)
     BING_CUSTOM_SEARCH_INSTANCE_NAME    — custom-search instance name on the
                                           Bing resource (configured in the
                                           Bing portal — defines the allowed
@@ -56,7 +57,7 @@ from websearch_bench.shared import (
 BACKEND_NAME = "foundry-bing-grounding-custom"
 REQUIRED_ENV: tuple[str, ...] = (
     "PROJECT_ENDPOINT",
-    "BING_CUSTOM_CONNECTION_NAME",
+    "BING_CUSTOM_SEARCH_CONNECTION_ID",
     "BING_CUSTOM_SEARCH_INSTANCE_NAME",
 )
 
@@ -66,7 +67,7 @@ console = Console()
 async def run() -> RunMetrics:
     load_dotenv(override=True)
     project_endpoint = os.environ["PROJECT_ENDPOINT"]
-    bing_connection_name = os.environ["BING_CUSTOM_CONNECTION_NAME"]
+    bing_connection_id = os.environ["BING_CUSTOM_SEARCH_CONNECTION_ID"]
     instance_name = os.environ["BING_CUSTOM_SEARCH_INSTANCE_NAME"]
 
     async with (
@@ -74,9 +75,6 @@ async def run() -> RunMetrics:
         AIProjectClient(endpoint=project_endpoint, credential=credential) as project,
     ):
         openai = project.get_openai_client()
-
-        # Resolve the connection ID from its friendly name (per the docs).
-        bing_connection = await project.connections.get(bing_connection_name)
 
         agent = await project.agents.create_version(
             agent_name="foundry-bing-grounding-custom",
@@ -88,7 +86,7 @@ async def run() -> RunMetrics:
                         bing_custom_search_preview=BingCustomSearchToolParameters(
                             search_configurations=[
                                 BingCustomSearchConfiguration(
-                                    project_connection_id=bing_connection.id,
+                                    project_connection_id=bing_connection_id,
                                     instance_name=instance_name,
                                 )
                             ],
