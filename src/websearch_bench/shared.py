@@ -13,10 +13,16 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from dotenv import load_dotenv
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+
+# Load .env before reading any module-level env vars so MODEL / MODEL_FAST /
+# OPENAI_MODEL pick up the user's overrides at import time. Backends still
+# call load_dotenv(override=True) inside run() for their own per-run vars.
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # Shared workload — change here, apply everywhere.
