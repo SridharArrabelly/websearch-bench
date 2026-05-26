@@ -61,26 +61,9 @@ def _env_float(name: str, default: float) -> float:
 # Env vars override either the per-1000 (preferred) or the legacy per-call name.
 # ---------------------------------------------------------------------------
 
-BING_GROUNDING_USD_PER_1K: float = _env_float(
-    "BING_GROUNDING_USD_PER_1K",
-    _env_float("BING_GROUNDING_USD_PER_CALL", 0.035) * 1000.0
-    if os.getenv("BING_GROUNDING_USD_PER_CALL") else 35.0,
-)
-BING_CUSTOM_USD_PER_1K: float = _env_float(
-    "BING_CUSTOM_USD_PER_1K",
-    _env_float("BING_CUSTOM_USD_PER_CALL", 0.035) * 1000.0
-    if os.getenv("BING_CUSTOM_USD_PER_CALL") else 35.0,
-)
-OPENAI_WEB_SEARCH_USD_PER_1K: float = _env_float(
-    "OPENAI_WEB_SEARCH_USD_PER_1K",
-    _env_float("OPENAI_WEB_SEARCH_USD_PER_CALL", 0.010) * 1000.0
-    if os.getenv("OPENAI_WEB_SEARCH_USD_PER_CALL") else 10.0,
-)
-
-# Kept for backward-compatibility (HTML report still shows these).
-BING_GROUNDING_USD_PER_CALL: float = BING_GROUNDING_USD_PER_1K / 1000.0
-BING_CUSTOM_USD_PER_CALL: float = BING_CUSTOM_USD_PER_1K / 1000.0
-OPENAI_WEB_SEARCH_USD_PER_CALL: float = OPENAI_WEB_SEARCH_USD_PER_1K / 1000.0
+BING_GROUNDING_USD_PER_1K: float = _env_float("BING_GROUNDING_USD_PER_1K", 35.0)
+BING_CUSTOM_USD_PER_1K: float = _env_float("BING_CUSTOM_USD_PER_1K", 35.0)
+OPENAI_WEB_SEARCH_USD_PER_1K: float = _env_float("OPENAI_WEB_SEARCH_USD_PER_1K", 10.0)
 
 
 def model_token_cost(
@@ -182,9 +165,6 @@ def estimate_cost(
     cached_input_tokens: int | None = None,
     web_search_calls: int | None = None,
     bing_queries: int | None = None,
-    # Legacy alias — older callers passed ``search_calls``. Kept so existing
-    # backends keep working until they're all migrated in one PR.
-    search_calls: int | None = None,
 ) -> float:
     """USD estimate for a single run. = model token cost + per-call tool cost.
 
@@ -200,9 +180,5 @@ def estimate_cost(
     """
     return (
         model_token_cost(model, input_tokens, output_tokens, cached_input_tokens)
-        + tool_cost(
-            backend,
-            web_search_calls if web_search_calls is not None else search_calls,
-            bing_queries,
-        )
+        + tool_cost(backend, web_search_calls, bing_queries)
     )

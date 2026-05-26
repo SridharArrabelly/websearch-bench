@@ -31,7 +31,7 @@ SDKs themselves don't all expose them. Here's the honest truth:
 | Setting | `foundry-bing-grounding` | `foundry-bing-grounding-custom` | `foundry-ws-bing` | `foundry-ws-bingcustom` | `agentfx-bing*` | `openai-ws` |
 | --- | --- | --- | --- | --- | --- | --- |
 | `SEARCH_CONTEXT_SIZE` (`shared.py`) | n/a — `BingGroundingTool` has no context-size knob | n/a — `BingCustomSearchPreviewTool` has no context-size knob | ✅ passed to `WebSearchTool` | ✅ passed to `WebSearchTool` | ✅ passed via `get_web_search_tool` | ❌ not accepted by the OpenAI Responses `web_search` `filters` block |
-| `ALLOWED_DOMAINS` (`shared.py`) | n/a — use a Bing Custom Search connection if you need domain restriction | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed as `WebSearchToolFilters(allowed_domains=…)` | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed via `get_web_search_tool(allowed_domains=…)` | ✅ passed as `filters.allowed_domains` |
+| `ALLOWED_DOMAINS` (`.env`, parsed by `shared.py`) | n/a — use a Bing Custom Search connection if you need domain restriction | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed as `WebSearchToolFilters(allowed_domains=…)` | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed via `get_web_search_tool(allowed_domains=…)` | ✅ passed as `filters.allowed_domains` |
 
 So for a strictly apples-to-apples comparison, either accept the limitations
 above or pin the Bing Custom Search instance to the same domain list you've
@@ -301,11 +301,14 @@ those module-level constants once and rerun `websearch-bench`:
 - `SEARCH_CONTEXT_SIZE` — `"low" | "medium" | "high"`. Honored by all
   backends except `openai-ws` (the OpenAI Responses `web_search` `filters`
   block doesn't expose it today).
-- `ALLOWED_DOMAINS` — only honored by `agentfx-bing*` and `openai-ws`. For
-  `foundry-ws-bingcustom` you must set the allowed-domain list on the
-  Bing Custom Search instance itself in the [Bing portal](https://www.customsearch.ai/).
-  For `foundry-ws-bing` there is no domain filter — the `azure-ai-projects`
-  `WebSearchTool` does not accept one.
+- `ALLOWED_DOMAINS` — set in `.env` (comma-separated; full URLs like
+  `https://www.sars.gov.za/` are accepted and normalized to hostnames).
+  Honored by `foundry-ws-bing`, `foundry-ws-bing-fast`, `agentfx-bing*`,
+  and `openai-ws`. For `foundry-ws-bingcustom` and
+  `foundry-bing-grounding-custom` you must set the allowed-domain list on
+  the Bing Custom Search instance itself in the
+  [Bing portal](https://www.customsearch.ai/) — the API does not accept a
+  `filters` block when a `custom_search_configuration` is set.
 
 ## Pricing
 

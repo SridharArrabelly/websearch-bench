@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import html
 import json
-from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
@@ -247,7 +246,3 @@ def write_html(
     )
     path.write_text(rendered, encoding="utf-8")
     return path.resolve()
-
-
-# Suppress unused-import warning from asdict; kept for future JSON sidecar.
-_ = asdict

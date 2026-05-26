@@ -2,7 +2,7 @@
 
 Stable public API:
     from websearch_bench import RunMetrics, SHARED_QUERY, estimate_cost
-    from websearch_bench.backends import BACKENDS
+    from websearch_bench.backends import discover
 """
 
 from .pricing import estimate_cost
