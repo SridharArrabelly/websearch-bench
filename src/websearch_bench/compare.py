@@ -177,6 +177,8 @@ def _setup_tracing() -> None:
     # Must be set BEFORE the SDK clients are instantiated.
     os.environ.setdefault("AZURE_EXPERIMENTAL_ENABLE_GENAI_TRACING", "true")
     os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "true")
+    # azure-ai-projects 2.1.0 _append_to_message_attribute crashes on NonRecordingSpan in FoundryChatClient path; disable client-side Responses instrumentation.
+    os.environ.setdefault("AZURE_TRACING_GEN_AI_INSTRUMENT_RESPONSES_API", "false")
     try:
         from azure.monitor.opentelemetry import configure_azure_monitor
         from agent_framework.observability import create_resource, enable_instrumentation

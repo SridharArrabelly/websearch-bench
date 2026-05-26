@@ -253,7 +253,7 @@ def debug_dump(backend: str, payload: Any) -> str | None:
     def _serialize(obj: Any) -> Any:
         if hasattr(obj, "model_dump"):
             try:
-                return obj.model_dump()
+                return obj.model_dump(warnings=False)
             except Exception:
                 pass
         if hasattr(obj, "__dict__"):

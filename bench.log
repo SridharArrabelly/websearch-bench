@@ -1,0 +1,864 @@
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ foundry-bing-grounding ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Agent created id=foundry-bing-grounding:1 name=foundry-bing-grounding version=1
+User: What are the current individual income tax brackets in South Africa for 
+the 2025/2026 tax year?
+
+Agent: For the 2025/2026 South African tax year (year of assessment ending 28 
+February 2026), SARS has confirmed that there are **no changes** to the 
+individual income tax table compared with 2024/2025.[1]  
+
+The current **individual income tax brackets** are:
+
+- **0 ΓÇô R237 100**: 18% of taxable income[1][2]  
+- **R237 101 ΓÇô R370 500**: R42 678 + 26% of taxable income above R237 100[1][2]
+- **R370 501 ΓÇô R512 800**: R77 362 + 31% of taxable income above R370 500[1][2]
+- **R512 801 ΓÇô R673 000**: R121 475 + 36% of taxable income above R512 
+800[1][2]  
+- **R673 001 ΓÇô R857 900**: R179 147 + 39% of taxable income above R673 
+000[1][2]  
+- **R857 901 ΓÇô R1 817 000**: R251 258 + 41% of taxable income above R857 
+900[1][2]  
+- **R1 817 001 and above**: R644 489 + 45% of taxable income above R1 817 
+000[1][2]  
+
+SARS explicitly notes that for the **2026 tax year (1 March 2025 ΓÇô 28 February 
+2026)** there were ΓÇ£no changesΓÇ¥ to the tax table compared to 2025.[1]  
+
+---
+
+**Sources**
+
+[1] https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/ 
+[2] 
+https://www.auditpartners.co.za/wp-content/uploads/2025/03/Tax-Guide-2025-digit
+al12032025.pdf
+C:\Users\sarrabelly\Documents\GitHub\websearch-bench\.venv\Lib\site-packages\pydantic\main.py:475: UserWarning: Pydantic serializer warnings:
+  PydanticSerializationUnexpectedValue(Expected `literal['message']` - serialized value may not be as expected [field_name='type', input_value='bing_grounding_call', input_type=str])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFileSearchToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionWebSearch` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseComputerToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseComputerToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseReasoningItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseToolSearchCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseToolSearchOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCompactionItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ImageGenerationCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCodeInterpreterToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `LocalShellCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `LocalShellCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionShellToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionShellToolCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseApplyPatchToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseApplyPatchToolCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpListTools` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpApprovalRequest` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpApprovalResponse` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCustomToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCustomToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...s 2025 2026 tax year"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `literal['message']` - serialized value may not be as expected [field_name='type', input_value='bing_grounding_call_output', input_type=str])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFileSearchToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionWebSearch` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseComputerToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseComputerToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseReasoningItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseToolSearchCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseToolSearchOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCompactionItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ImageGenerationCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCodeInterpreterToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `LocalShellCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `LocalShellCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionShellToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionShellToolCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseApplyPatchToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseApplyPatchToolCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpListTools` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpApprovalRequest` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpApprovalResponse` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCustomToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCustomToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...d8cacc0a767', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `literal['function']` - serialized value may not be as expected [field_name='type', input_value='bing_grounding', input_type=str])
+  PydanticSerializationUnexpectedValue(Expected `FileSearchTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ComputerTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ComputerUsePreviewTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `WebSearchTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `Mcp` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `CodeInterpreter` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ImageGeneration` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `LocalShell` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `FunctionShellTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `CustomTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `NamespaceTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ToolSearchTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `WebSearchPreviewTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ApplyPatchTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p...ndingwithbingnt42lg'}]}), input_type=FunctionTool])
+  return self.__pydantic_serializer__.to_python(
+Debug dump: 
+C:\Users\sarrabelly\Documents\GitHub\websearch-bench\debug\foundry-bing-groundi
+ng-20260526-140925.json
+Usage ΓÇö foundry-bing-grounding                  
+  Identity                                      
+    backend             foundry-bing-grounding  
+    model                              gpt-5.1  
+  Tokens                                        
+    input                                3,902  
+      cached                                 0  
+    output                                 448  
+    total                                4,350  
+  Web search                                    
+    web_search_calls                         0  
+    bing_queries                             1  
+  Performance                                   
+    latency                            29.01 s  
+    cost                               $0.0444  
+  Output                                        
+    answer_chars                         1,155  
+notes: BingGroundingTool: single-shot Bing query (no server fan-out)
+response_id: resp_04e74bb718e826bc006a158d5c83488193bba55bab916dcba4
+ΓöîΓöÇ Answer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé For the 2025/2026 South African tax year (year of assessment ending 28      Γöé
+Γöé February 2026), SARS has confirmed that there are **no changes** to the     Γöé
+Γöé individual income tax table compared with 2024/2025.[1]                     Γöé
+Γöé                                                                             Γöé
+Γöé The current **individual income tax brackets** are:                         Γöé
+Γöé                                                                             Γöé
+Γöé - **0 ΓÇô R237 100**: 18% of taxable income[1][2]                             Γöé
+Γöé - **R237 101 ΓÇô R370 500**: R42 678 + 26% of taxable income above R237       Γöé
+Γöé 100[1][2]                                                                   Γöé
+Γöé - **R370 501 ΓÇô R512 800**: R77 362 + 31% of taxable income above R370       Γöé
+Γöé 500[1][2]                                                                   Γöé
+Γöé - **R512 801 ΓÇô R673 000**: R121 475 + 36% of taxable income above R512      Γöé
+Γöé 800[1][2]                                                                   Γöé
+Γöé - **R673 001 ΓÇô R857 900**: R179 147 + 39% of taxable income above R673      Γöé
+Γöé 000[1][2]                                                                   Γöé
+Γöé - **R857 901 ΓÇô R1 817 000**: R251 258 + 41% of taxable income above R857    Γöé
+Γöé 900[1][2]                                                                   Γöé
+Γöé - **R1 817 001 and above**: R644 489 + 45% of taxable income above R1 817   Γöé
+Γöé 000[1][2]                                                                   Γöé
+Γöé                                                                             Γöé
+Γöé SARS explicitly notes that for the **2026 tax year (1 March 2025 ΓÇô 28       Γöé
+Γöé February 2026)** there were ΓÇ£no changesΓÇ¥ to the tax table compared to       Γöé
+Γöé 2025.[1]                                                                    Γöé
+Γöé                                                                             Γöé
+Γöé ---                                                                         Γöé
+Γöé                                                                             Γöé
+Γöé **Sources**                                                                 Γöé
+Γöé                                                                             Γöé
+Γöé [1]                                                                         Γöé
+Γöé https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/  Γöé
+Γöé [2]                                                                         Γöé
+Γöé https://www.auditpartners.co.za/wp-content/uploads/2025/03/Tax-Guide-2025-d Γöé
+Γöé igital12032025.pdf                                                          Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ foundry-bing-grounding-custom ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Agent created id=foundry-bing-grounding-custom:1 
+name=foundry-bing-grounding-custom version=1
+User: What are the current individual income tax brackets in South Africa for 
+the 2025/2026 tax year?
+
+Agent: For the 2025/2026 tax year (1 March 2025 ΓÇô 28 February 2026), SARS 
+states that there are **no changes** to the personal income tax brackets 
+compared to the 2024/2025 year, so the **2026 tax year uses the same brackets 
+as 2025**.[1][2]
+
+The latest SARS ΓÇ£Rates of Tax for IndividualsΓÇ¥ table shows the brackets 
+explicitly for the **2024/2025 tax year**, which therefore also apply for 
+**2025/2026**:[1]
+
+**Individuals tax tables ΓÇô 2025 & 2026 tax years  
+(1 March 2024 ΓÇô 28 February 2026)**
+
+- **R0 ΓÇô R237 100**: 18% of taxable income  
+- **R237 101 ΓÇô R370 500**: R42 678 + 26% of taxable income above R237 100  
+- **R370 501 ΓÇô R512 800**: R77 362 + 31% of taxable income above R370 500  
+- **R512 801 ΓÇô R673 000**: R121 475 + 36% of taxable income above R512 800  
+- **R673 001 ΓÇô R857 900**: R179 147 + 39% of taxable income above R673 000  
+- **R857 901 ΓÇô R1 817 000**: R251 258 + 41% of taxable income above R857 900  
+- **R1 817 001 and above**: R644 489 + 45% of taxable income above R1 817 
+000[1]
+
+SARS further confirms in its 2026 employeesΓÇÖ tax (PAYE) notice that **ΓÇ£the 
+personal income tax brackets ΓÇª will remain unchangedΓÇ¥** from the previous year,
+i.e. these brackets continue to apply from **1 March 2025**.[2]
+
+---
+
+Sources  
+[1] https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/ 
+[2] https://www.sars.gov.za/latest-news/2026-employees-tax-deduction-tables/
+C:\Users\sarrabelly\Documents\GitHub\websearch-bench\.venv\Lib\site-packages\pydantic\main.py:475: UserWarning: Pydantic serializer warnings:
+  PydanticSerializationUnexpectedValue(Expected `literal['message']` - serialized value may not be as expected [field_name='type', input_value='bing_custom_search_preview_call', input_type=str])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFileSearchToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionWebSearch` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseComputerToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseComputerToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseReasoningItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseToolSearchCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseToolSearchOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCompactionItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ImageGenerationCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCodeInterpreterToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `LocalShellCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `LocalShellCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionShellToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionShellToolCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseApplyPatchToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseApplyPatchToolCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpListTools` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpApprovalRequest` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpApprovalResponse` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCustomToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCustomToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...5 2026 tax year SARS"}'), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `literal['message']` - serialized value may not be as expected [field_name='type', input_value='bing_custom_search_preview_call_output', input_type=str])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFileSearchToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionWebSearch` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseComputerToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseComputerToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseReasoningItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseToolSearchCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseToolSearchOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCompactionItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ImageGenerationCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCodeInterpreterToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `LocalShellCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `LocalShellCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionShellToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseFunctionShellToolCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseApplyPatchToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseApplyPatchToolCallOutput` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpListTools` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpApprovalRequest` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `McpApprovalResponse` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCustomToolCall` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `ResponseCustomToolCallOutputItem` - serialized value may not be as expected [field_name='output', input_value=ResponseOutputMessage(id=...10604728507', output=''), input_type=ResponseOutputMessage])
+  PydanticSerializationUnexpectedValue(Expected `literal['function']` - serialized value may not be as expected [field_name='type', input_value='bing_custom_search_preview', input_type=str])
+  PydanticSerializationUnexpectedValue(Expected `FileSearchTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ComputerTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ComputerUsePreviewTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `WebSearchTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `Mcp` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `CodeInterpreter` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ImageGeneration` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `LocalShell` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `FunctionShellTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `CustomTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `NamespaceTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ToolSearchTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `WebSearchPreviewTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  PydanticSerializationUnexpectedValue(Expected `ApplyPatchTool` - serialized value may not be as expected [field_name='tools', input_value=FunctionTool(name=None, p..._name': 'sarssearch'}]}), input_type=FunctionTool])
+  return self.__pydantic_serializer__.to_python(
+Debug dump: 
+C:\Users\sarrabelly\Documents\GitHub\websearch-bench\debug\foundry-bing-groundi
+ng-custom-20260526-140944.json
+Usage ΓÇö foundry-bing-grounding-custom                  
+  Identity                                             
+    backend             foundry-bing-grounding-custom  
+    model                                     gpt-5.1  
+  Tokens                                               
+    input                                       5,361  
+      cached                                        0  
+    output                                        499  
+    total                                       5,860  
+  Web search                                           
+    web_search_calls                                0  
+    bing_queries                                    0  
+  Performance                                          
+    latency                                   15.56 s  
+    cost                                      $0.0117  
+  Output                                               
+    answer_chars                                1,393  
+notes: BingCustomSearchPreviewTool: single-shot Bing Custom Search query (no 
+server fan-out)
+response_id: resp_0e29a8a377443316006a158d7b6b4481909be7b45f04c560aa
+ΓöîΓöÇ Answer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé For the 2025/2026 tax year (1 March 2025 ΓÇô 28 February 2026), SARS states   Γöé
+Γöé that there are **no changes** to the personal income tax brackets compared  Γöé
+Γöé to the 2024/2025 year, so the **2026 tax year uses the same brackets as     Γöé
+Γöé 2025**.[1][2]                                                               Γöé
+Γöé                                                                             Γöé
+Γöé The latest SARS ΓÇ£Rates of Tax for IndividualsΓÇ¥ table shows the brackets     Γöé
+Γöé explicitly for the **2024/2025 tax year**, which therefore also apply for   Γöé
+Γöé **2025/2026**:[1]                                                           Γöé
+Γöé                                                                             Γöé
+Γöé **Individuals tax tables ΓÇô 2025 & 2026 tax years                            Γöé
+Γöé (1 March 2024 ΓÇô 28 February 2026)**                                         Γöé
+Γöé                                                                             Γöé
+Γöé - **R0 ΓÇô R237 100**: 18% of taxable income                                  Γöé
+Γöé - **R237 101 ΓÇô R370 500**: R42 678 + 26% of taxable income above R237 100   Γöé
+Γöé - **R370 501 ΓÇô R512 800**: R77 362 + 31% of taxable income above R370 500   Γöé
+Γöé - **R512 801 ΓÇô R673 000**: R121 475 + 36% of taxable income above R512 800  Γöé
+Γöé - **R673 001 ΓÇô R857 900**: R179 147 + 39% of taxable income above R673 000  Γöé
+Γöé - **R857 901 ΓÇô R1 817 000**: R251 258 + 41% of taxable income above R857    Γöé
+Γöé 900                                                                         Γöé
+Γöé - **R1 817 001 and above**: R644 489 + 45% of taxable income above R1 817   Γöé
+Γöé 000[1]                                                                      Γöé
+Γöé                                                                             Γöé
+Γöé SARS further confirms in its 2026 employeesΓÇÖ tax (PAYE) notice that **ΓÇ£the  Γöé
+Γöé personal income tax brackets ΓÇª will remain unchangedΓÇ¥** from the previous   Γöé
+Γöé year, i.e. these brackets continue to apply from **1 March 2025**.[2]       Γöé
+Γöé                                                                             Γöé
+Γöé ---                                                                         Γöé
+Γöé                                                                             Γöé
+Γöé Sources                                                                     Γöé
+Γöé [1]                                                                         Γöé
+Γöé https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/  Γöé
+Γöé [2]                                                                         Γöé
+Γöé https://www.sars.gov.za/latest-news/2026-employees-tax-deduction-tables/    Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ foundry-ws-bing ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Agent created id=foundry-ws-bing:3 name=foundry-ws-bing version=3
+User: What are the current individual income tax brackets in South Africa for 
+the 2025/2026 tax year?
+
+Agent: For the **2025/2026 tax year** (1 March 2025 ΓÇô 28 February 2026), SARS 
+confirms that the **personal income tax brackets remain unchanged** from the 
+prior year. [1][2][7]
+
+The **individual (and special trust) tax table** for this period is: [1][2]
+
+1. **R1 ΓÇô R237 100**  
+   18% of taxable income  
+
+2. **R237 101 ΓÇô R370 500**  
+   R42 678 + 26% of taxable income above R237 100  
+
+3. **R370 501 ΓÇô R512 800**  
+   R77 362 + 31% of taxable income above R370 500  
+
+4. **R512 801 ΓÇô R673 000**  
+   R121 475 + 36% of taxable income above R512 800  
+
+5. **R673 001 ΓÇô R857 900**  
+   R179 147 + 39% of taxable income above R673 000  
+
+6. **R857 901 ΓÇô R1 817 000**  
+   R251 258 + 41% of taxable income above R857 900  
+
+7. **R1 817 001 and above**  
+   R644 489 + 45% of taxable income above R1 817 000  
+
+These brackets are taken directly from the **SARS Budget tax guide for 
+2025/26** and the SARS ΓÇ£Rates of Tax for IndividualsΓÇ¥ / ΓÇ£Income TaxΓÇ¥ pages, 
+which state that there were **no changes to the personal income tax brackets** 
+for the 2026 year of assessment (i.e. the 2025/2026 tax year). [1][2][4][7]
+
+---
+
+**Sources**
+
+[1] https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/ 
+[2] 
+https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May-2025.p
+df  
+[3] https://www.sars.gov.za/types-of-tax/personal-income-tax/  
+[4] https://www.sars.gov.za/tax-rates/income-tax/  
+[7] https://www.sars.gov.za/latest-news/2026-employees-tax-deduction-tables/
+Debug dump: 
+C:\Users\sarrabelly\Documents\GitHub\websearch-bench\debug\foundry-ws-bing-2026
+0526-141022.json
+Usage ΓÇö foundry-ws-bing                        
+  Identity                                     
+    backend                   foundry-ws-bing  
+    model                             gpt-5.1  
+  Tokens                                       
+    input                              10,647  
+      cached            4,352  (41% of input)  
+    output                                549  
+    total                              11,196  
+  Web search                                   
+    web_search_calls                        1  
+    bing_queries                            1  
+  Performance                                  
+    latency                           34.78 s  
+    cost                              $0.0489  
+  Output                                       
+    answer_chars                        1,482  
+notes: bing_queries from response is lower bound ΓÇö server fan-out hidden; see 
+App Insights
+response_id: resp_092a8b5fc2da1d8c006a158d8e33688195ac81e56c4812580e
+ΓöîΓöÇ Answer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé For the **2025/2026 tax year** (1 March 2025 ΓÇô 28 February 2026), SARS      Γöé
+Γöé confirms that the **personal income tax brackets remain unchanged** from    Γöé
+Γöé the prior year. [1][2][7]                                                   Γöé
+Γöé                                                                             Γöé
+Γöé The **individual (and special trust) tax table** for this period is: [1][2] Γöé
+Γöé                                                                             Γöé
+Γöé 1. **R1 ΓÇô R237 100**                                                        Γöé
+Γöé    18% of taxable income                                                    Γöé
+Γöé                                                                             Γöé
+Γöé 2. **R237 101 ΓÇô R370 500**                                                  Γöé
+Γöé    R42 678 + 26% of taxable income above R237 100                           Γöé
+Γöé                                                                             Γöé
+Γöé 3. **R370 501 ΓÇô R512 800**                                                  Γöé
+Γöé    R77 362 + 31% of taxable income above R370 500                           Γöé
+Γöé                                                                             Γöé
+Γöé 4. **R512 801 ΓÇô R673 000**                                                  Γöé
+Γöé    R121 475 + 36% of taxable income above R512 800                          Γöé
+Γöé                                                                             Γöé
+Γöé 5. **R673 001 ΓÇô R857 900**                                                  Γöé
+Γöé    R179 147 + 39% of taxable income above R673 000                          Γöé
+Γöé                                                                             Γöé
+Γöé 6. **R857 901 ΓÇô R1 817 000**                                                Γöé
+Γöé    R251 258 + 41% of taxable income above R857 900                          Γöé
+Γöé                                                                             Γöé
+Γöé 7. **R1 817 001 and above**                                                 Γöé
+Γöé    R644 489 + 45% of taxable income above R1 817 000                        Γöé
+Γöé                                                                             Γöé
+Γöé These brackets are taken directly from the **SARS Budget tax guide for      Γöé
+Γöé 2025/26** and the SARS ΓÇ£Rates of Tax for IndividualsΓÇ¥ / ΓÇ£Income TaxΓÇ¥ pages, Γöé
+Γöé which state that there were **no changes to the personal income tax         Γöé
+Γöé brackets** for the 2026 year of assessment (i.e. the 2025/2026 tax year).   Γöé
+Γöé [1][2][4][7]                                                                Γöé
+Γöé                                                                             Γöé
+Γöé ---                                                                         Γöé
+Γöé                                                                             Γöé
+Γöé **Sources**                                                                 Γöé
+Γöé                                                                             Γöé
+Γöé [1]                                                                         Γöé
+Γöé https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/  Γöé
+Γöé [2]                                                                         Γöé
+Γöé https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May-20 Γöé
+Γöé 25.pdf                                                                      Γöé
+Γöé [3] https://www.sars.gov.za/types-of-tax/personal-income-tax/               Γöé
+Γöé [4] https://www.sars.gov.za/tax-rates/income-tax/                           Γöé
+Γöé [7]                                                                         Γöé
+Γöé https://www.sars.gov.za/latest-news/2026-employees-tax-deduction-tables/    Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ foundry-ws-bing-fast ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Agent created id=foundry-ws-bing-fast:3 name=foundry-ws-bing-fast version=3 
+model=gpt-4.1
+User: What are the current individual income tax brackets in South Africa for 
+the 2025/2026 tax year?
+
+Agent: Below are the current individual income tax brackets in South Africa for
+the 2025/2026 tax year (1ΓÇ»MarchΓÇ»2025 ΓÇô 28ΓÇ»FebruaryΓÇ»2026):
+
+From the SARS Budget Tax Guide updated 21ΓÇ»MayΓÇ»2025:
+
+Individuals and special trusts
+
+Taxable income (R) ΓÇô Rate of Tax
+
+ΓÇóΓÇâ1 ΓÇô 237ΓÇ»100: 18ΓÇ»% of taxable income  
+ΓÇóΓÇâ237ΓÇ»101 ΓÇô 370ΓÇ»500: 42ΓÇ»678ΓÇ»+ΓÇ»26ΓÇ»% of taxable income aboveΓÇ»237ΓÇ»100  
+ΓÇóΓÇâ370ΓÇ»501 ΓÇô 512ΓÇ»800: 77ΓÇ»362ΓÇ»+ΓÇ»31ΓÇ»% of taxable income aboveΓÇ»370ΓÇ»500  
+ΓÇóΓÇâ512ΓÇ»801 ΓÇô 673ΓÇ»000: 121ΓÇ»475ΓÇ»+ΓÇ»36ΓÇ»% of taxable income aboveΓÇ»512ΓÇ»800  
+ΓÇóΓÇâ673ΓÇ»001 ΓÇô 857ΓÇ»900: 179ΓÇ»147ΓÇ»+ΓÇ»39ΓÇ»% of taxable income aboveΓÇ»673ΓÇ»000  
+ΓÇóΓÇâ857ΓÇ»901 ΓÇô 1ΓÇ»817ΓÇ»000: 251ΓÇ»258ΓÇ»+ΓÇ»41ΓÇ»% of taxable income aboveΓÇ»857ΓÇ»900  
+ΓÇóΓÇâ1ΓÇ»817ΓÇ»001 and above: 644ΓÇ»489ΓÇ»+ΓÇ»45ΓÇ»% of taxable income aboveΓÇ»1ΓÇ»817ΓÇ»000 
+((https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May-2025
+.pdf))
+
+These are the exact tax brackets for the 2025/2026 year of assessment.
+
+Sources:
+
+1. SARS Budget Tax Guide ΓÇô Income tax: individuals and trusts (1ΓÇ»MarchΓÇ»2025 ΓÇôΓÇ»
+28ΓÇ»FebruaryΓÇ»2026) ΓÇô detailed tax brackets 
+((https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May-2025
+.pdf))
+Debug dump: 
+C:\Users\sarrabelly\Documents\GitHub\websearch-bench\debug\foundry-ws-bing-fast
+-20260526-141034.json
+Usage ΓÇö foundry-ws-bing-fast                  
+  Identity                                    
+    backend             foundry-ws-bing-fast  
+    model                            gpt-4.1  
+  Tokens                                      
+    input                             17,148  
+      cached                               0  
+    output                               386  
+    total                             17,534  
+  Web search                                  
+    web_search_calls                       1  
+    bing_queries                           2  
+  Performance                                 
+    latency                           8.90 s  
+    cost                             $0.0724  
+  Output                                      
+    answer_chars                       1,113  
+notes: WebSearchTool on non-reasoning model (gpt-4.1); expected: 1 
+web_search_call, no fan-out
+response_id: resp_09cc71eeb42d72cb006a158db3e41c8196be8f4a9020261784
+ΓöîΓöÇ Answer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé Below are the current individual income tax brackets in South Africa for    Γöé
+Γöé the 2025/2026 tax year (1ΓÇ»MarchΓÇ»2025 ΓÇô 28ΓÇ»FebruaryΓÇ»2026):                   Γöé
+Γöé                                                                             Γöé
+Γöé From the SARS Budget Tax Guide updated 21ΓÇ»MayΓÇ»2025:                         Γöé
+Γöé                                                                             Γöé
+Γöé Individuals and special trusts                                              Γöé
+Γöé                                                                             Γöé
+Γöé Taxable income (R) ΓÇô Rate of Tax                                            Γöé
+Γöé                                                                             Γöé
+Γöé ΓÇóΓÇâ1 ΓÇô 237ΓÇ»100: 18ΓÇ»% of taxable income                                       Γöé
+Γöé ΓÇóΓÇâ237ΓÇ»101 ΓÇô 370ΓÇ»500: 42ΓÇ»678ΓÇ»+ΓÇ»26ΓÇ»% of taxable income aboveΓÇ»237ΓÇ»100          Γöé
+Γöé ΓÇóΓÇâ370ΓÇ»501 ΓÇô 512ΓÇ»800: 77ΓÇ»362ΓÇ»+ΓÇ»31ΓÇ»% of taxable income aboveΓÇ»370ΓÇ»500          Γöé
+Γöé ΓÇóΓÇâ512ΓÇ»801 ΓÇô 673ΓÇ»000: 121ΓÇ»475ΓÇ»+ΓÇ»36ΓÇ»% of taxable income aboveΓÇ»512ΓÇ»800         Γöé
+Γöé ΓÇóΓÇâ673ΓÇ»001 ΓÇô 857ΓÇ»900: 179ΓÇ»147ΓÇ»+ΓÇ»39ΓÇ»% of taxable income aboveΓÇ»673ΓÇ»000         Γöé
+Γöé ΓÇóΓÇâ857ΓÇ»901 ΓÇô 1ΓÇ»817ΓÇ»000: 251ΓÇ»258ΓÇ»+ΓÇ»41ΓÇ»% of taxable income aboveΓÇ»857ΓÇ»900       Γöé
+Γöé ΓÇóΓÇâ1ΓÇ»817ΓÇ»001 and above: 644ΓÇ»489ΓÇ»+ΓÇ»45ΓÇ»% of taxable income aboveΓÇ»1ΓÇ»817ΓÇ»000     Γöé
+Γöé ((https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May- Γöé
+Γöé 2025.pdf))                                                                  Γöé
+Γöé                                                                             Γöé
+Γöé These are the exact tax brackets for the 2025/2026 year of assessment.      Γöé
+Γöé                                                                             Γöé
+Γöé Sources:                                                                    Γöé
+Γöé                                                                             Γöé
+Γöé 1. SARS Budget Tax Guide ΓÇô Income tax: individuals and trusts (1ΓÇ»MarchΓÇ»2025 Γöé
+Γöé ΓÇôΓÇ»28ΓÇ»FebruaryΓÇ»2026) ΓÇô detailed tax brackets                                 Γöé
+Γöé ((https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May- Γöé
+Γöé 2025.pdf))                                                                  Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ foundry-ws-bingcustom ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+Agent created id=foundry-ws-bingcustom:2 name=foundry-ws-bingcustom version=2
+User: What are the current individual income tax brackets in South Africa for 
+the 2025/2026 tax year?
+
+Agent: For the 2025/2026 South African tax year (1 March 2025 ΓÇô 28 February 
+2026), SARS confirms that the personal income tax brackets for individuals 
+remain unchanged from the prior year. [1][2][4][8]
+
+According to the SARS ΓÇ£Rates of Tax for IndividualsΓÇ¥ table (2026 tax year) and 
+the SARS Budget Tax Guide for 2025/26, the brackets for **individuals and 
+special trusts** are: [1][8]
+
+**2026 year of assessment (1 March 2025 ΓÇô 28 February 2026)**  
+
+- **R1 ΓÇô R237 100**  
+  18% of taxable income  
+
+- **R237 101 ΓÇô R370 500**  
+  R42 678 + 26% of taxable income above R237 100  
+
+- **R370 501 ΓÇô R512 800**  
+  R77 362 + 31% of taxable income above R370 500  
+
+- **R512 801 ΓÇô R673 000**  
+  R121 475 + 36% of taxable income above R512 800  
+
+- **R673 001 ΓÇô R857 900**  
+  R179 147 + 39% of taxable income above R673 000  
+
+- **R857 901 ΓÇô R1 817 000**  
+  R251 258 + 41% of taxable income above R857 900  
+
+- **R1 817 001 and above**  
+  R644 489 + 45% of taxable income above R1 817 000  
+
+SARS explicitly states that for the **2026 year of assessment (1 March 2025 ΓÇô 
+28 February 2026)** there were **ΓÇ£no changesΓÇ¥** to the personal income tax 
+brackets compared with the immediately preceding year. [1][3][4][8]
+
+---
+
+**Sources**
+
+[1] https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/ 
+[2] https://www.sars.gov.za/tax-rates/income-tax/  
+[3] https://www.sars.gov.za/types-of-tax/personal-income-tax/  
+[4] https://www.sars.gov.za/latest-news/2026-employees-tax-deduction-tables/  
+[8] 
+https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May-2025.p
+df
+Debug dump: 
+C:\Users\sarrabelly\Documents\GitHub\websearch-bench\debug\foundry-ws-bingcusto
+m-20260526-141056.json
+Usage ΓÇö foundry-ws-bingcustom                  
+  Identity                                     
+    backend             foundry-ws-bingcustom  
+    model                             gpt-5.1  
+  Tokens                                       
+    input                              10,247  
+      cached            4,480  (44% of input)  
+    output                                568  
+    total                              10,815  
+  Web search                                   
+    web_search_calls                        1  
+    bing_queries                            1  
+  Performance                                  
+    latency                           19.64 s  
+    cost                              $0.0484  
+  Output                                       
+    answer_chars                        1,583  
+notes: bing_queries from response is lower bound ΓÇö server fan-out hidden; see 
+App Insights
+response_id: resp_0568a8d6d0bb5a0f006a158dbfd2e0819594a0f4af42ed6700
+ΓöîΓöÇ Answer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé For the 2025/2026 South African tax year (1 March 2025 ΓÇô 28 February 2026), Γöé
+Γöé SARS confirms that the personal income tax brackets for individuals remain  Γöé
+Γöé unchanged from the prior year. [1][2][4][8]                                 Γöé
+Γöé                                                                             Γöé
+Γöé According to the SARS ΓÇ£Rates of Tax for IndividualsΓÇ¥ table (2026 tax year)  Γöé
+Γöé and the SARS Budget Tax Guide for 2025/26, the brackets for **individuals   Γöé
+Γöé and special trusts** are: [1][8]                                            Γöé
+Γöé                                                                             Γöé
+Γöé **2026 year of assessment (1 March 2025 ΓÇô 28 February 2026)**               Γöé
+Γöé                                                                             Γöé
+Γöé - **R1 ΓÇô R237 100**                                                         Γöé
+Γöé   18% of taxable income                                                     Γöé
+Γöé                                                                             Γöé
+Γöé - **R237 101 ΓÇô R370 500**                                                   Γöé
+Γöé   R42 678 + 26% of taxable income above R237 100                            Γöé
+Γöé                                                                             Γöé
+Γöé - **R370 501 ΓÇô R512 800**                                                   Γöé
+Γöé   R77 362 + 31% of taxable income above R370 500                            Γöé
+Γöé                                                                             Γöé
+Γöé - **R512 801 ΓÇô R673 000**                                                   Γöé
+Γöé   R121 475 + 36% of taxable income above R512 800                           Γöé
+Γöé                                                                             Γöé
+Γöé - **R673 001 ΓÇô R857 900**                                                   Γöé
+Γöé   R179 147 + 39% of taxable income above R673 000                           Γöé
+Γöé                                                                             Γöé
+Γöé - **R857 901 ΓÇô R1 817 000**                                                 Γöé
+Γöé   R251 258 + 41% of taxable income above R857 900                           Γöé
+Γöé                                                                             Γöé
+Γöé - **R1 817 001 and above**                                                  Γöé
+Γöé   R644 489 + 45% of taxable income above R1 817 000                         Γöé
+Γöé                                                                             Γöé
+Γöé SARS explicitly states that for the **2026 year of assessment (1 March 2025 Γöé
+Γöé ΓÇô 28 February 2026)** there were **ΓÇ£no changesΓÇ¥** to the personal income    Γöé
+Γöé tax brackets compared with the immediately preceding year. [1][3][4][8]     Γöé
+Γöé                                                                             Γöé
+Γöé ---                                                                         Γöé
+Γöé                                                                             Γöé
+Γöé **Sources**                                                                 Γöé
+Γöé                                                                             Γöé
+Γöé [1]                                                                         Γöé
+Γöé https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/  Γöé
+Γöé [2] https://www.sars.gov.za/tax-rates/income-tax/                           Γöé
+Γöé [3] https://www.sars.gov.za/types-of-tax/personal-income-tax/               Γöé
+Γöé [4]                                                                         Γöé
+Γöé https://www.sars.gov.za/latest-news/2026-employees-tax-deduction-tables/    Γöé
+Γöé [8]                                                                         Γöé
+Γöé https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May-20 Γöé
+Γöé 25.pdf                                                                      Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ agentfx-bing ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+User: What are the current individual income tax brackets in South Africa for 
+the 2025/2026 tax year?
+
+Agent: For the 2025/2026 tax year (1 March 2025 ΓÇô 28 February 2026), SARS 
+confirmed that the personal income tax brackets for individuals remain 
+unchanged from the prior year. The brackets for individuals and special trusts 
+are therefore: [1][2][3][4]
+
+**Individuals and special trusts: tax rates from 1 March 2025 to 28 February 
+2026**
+
+- **R1 ΓÇô R237 100**  
+  18% of taxable income  
+
+- **R237 101 ΓÇô R370 500**  
+  R42 678 + 26% of taxable income above R237 100  
+
+- **R370 501 ΓÇô R512 800**  
+  R77 362 + 31% of taxable income above R370 500  
+
+- **R512 801 ΓÇô R673 000**  
+  R121 475 + 36% of taxable income above R512 800  
+
+- **R673 001 ΓÇô R857 900**  
+  R179 147 + 39% of taxable income above R673 000  
+
+- **R857 901 ΓÇô R1 817 000**  
+  R251 258 + 41% of taxable income above R857 900  
+
+- **R1 817 001 and above**  
+  R644 489 + 45% of taxable income above R1 817 000  
+
+SARS notes explicitly that there were **no changes** to the personal income tax
+brackets for the 2026 year of assessment (2025/2026 tax year). [1][3][4]
+
+---
+
+**Sources**
+
+[1] https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/ 
+[2] 
+https://www.sars.gov.za/wp-content/uploads/Docs/Budget/Budget2026/Budget-tax-gu
+ide-2026-web-version.pdf  
+[3] 
+https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May-2025.p
+df  
+[4] https://www.sars.gov.za/latest-news/2026-employees-tax-deduction-tables/
+Debug dump: 
+C:\Users\sarrabelly\Documents\GitHub\websearch-bench\debug\agentfx-bing-2026052
+6-141114.json
+Usage ΓÇö agentfx-bing                  
+  Identity                            
+    backend             agentfx-bing  
+    model                    gpt-5.1  
+  Tokens                              
+    input                     10,660  
+      cached                       ΓÇö  
+    output                       500  
+    total                     11,160  
+  Web search                          
+    web_search_calls               1  
+    bing_queries                   1  
+  Performance                         
+    latency                  17.11 s  
+    cost                     $0.0533  
+  Output                              
+    answer_chars               1,396  
+notes: bing_queries lower bound ΓÇö Foundry server fan-out hidden; see App 
+Insights
+response_id: resp_0435f2f09f2335a1006a158dd39414819099d4f2066f8bcd9d
+ΓöîΓöÇ Answer ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé For the 2025/2026 tax year (1 March 2025 ΓÇô 28 February 2026), SARS          Γöé
+Γöé confirmed that the personal income tax brackets for individuals remain      Γöé
+Γöé unchanged from the prior year. The brackets for individuals and special     Γöé
+Γöé trusts are therefore: [1][2][3][4]                                          Γöé
+Γöé                                                                             Γöé
+Γöé **Individuals and special trusts: tax rates from 1 March 2025 to 28         Γöé
+Γöé February 2026**                                                             Γöé
+Γöé                                                                             Γöé
+Γöé - **R1 ΓÇô R237 100**                                                         Γöé
+Γöé   18% of taxable income                                                     Γöé
+Γöé                                                                             Γöé
+Γöé - **R237 101 ΓÇô R370 500**                                                   Γöé
+Γöé   R42 678 + 26% of taxable income above R237 100                            Γöé
+Γöé                                                                             Γöé
+Γöé - **R370 501 ΓÇô R512 800**                                                   Γöé
+Γöé   R77 362 + 31% of taxable income above R370 500                            Γöé
+Γöé                                                                             Γöé
+Γöé - **R512 801 ΓÇô R673 000**                                                   Γöé
+Γöé   R121 475 + 36% of taxable income above R512 800                           Γöé
+Γöé                                                                             Γöé
+Γöé - **R673 001 ΓÇô R857 900**                                                   Γöé
+Γöé   R179 147 + 39% of taxable income above R673 000                           Γöé
+Γöé                                                                             Γöé
+Γöé - **R857 901 ΓÇô R1 817 000**                                                 Γöé
+Γöé   R251 258 + 41% of taxable income above R857 900                           Γöé
+Γöé                                                                             Γöé
+Γöé - **R1 817 001 and above**                                                  Γöé
+Γöé   R644 489 + 45% of taxable income above R1 817 000                         Γöé
+Γöé                                                                             Γöé
+Γöé SARS notes explicitly that there were **no changes** to the personal income Γöé
+Γöé tax brackets for the 2026 year of assessment (2025/2026 tax year).          Γöé
+Γöé [1][3][4]                                                                   Γöé
+Γöé                                                                             Γöé
+Γöé ---                                                                         Γöé
+Γöé                                                                             Γöé
+Γöé **Sources**                                                                 Γöé
+Γöé                                                                             Γöé
+Γöé [1]                                                                         Γöé
+Γöé https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/  Γöé
+Γöé [2]                                                                         Γöé
+Γöé https://www.sars.gov.za/wp-content/uploads/Docs/Budget/Budget2026/Budget-ta Γöé
+Γöé x-guide-2026-web-version.pdf                                                Γöé
+Γöé [3]                                                                         Γöé
+Γöé https://www.sars.gov.za/wp-content/uploads/20256/Budget-tax-guide-21-May-20 Γöé
+Γöé 25.pdf                                                                      Γöé
+Γöé [4]                                                                         Γöé
+Γöé https://www.sars.gov.za/latest-news/2026-employees-tax-deduction-tables/    Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+Skipping agentfx-bing-cached: disabled via ENABLE_AGENTFX_BING_CACHED
+Skipping openai-ws: disabled via ENABLE_OPENAI_WS
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ Reconciling against App Insights ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+-> foundry-bing-grounding: 
+resp_04e74bb718e826bc006a158d5c83488193bba55bab916dcba4
+-> foundry-bing-grounding-custom: 
+resp_0e29a8a377443316006a158d7b6b4481909be7b45f04c560aa
+-> foundry-ws-bing: resp_092a8b5fc2da1d8c006a158d8e33688195ac81e56c4812580e
+-> foundry-ws-bing-fast: 
+resp_09cc71eeb42d72cb006a158db3e41c8196be8f4a9020261784
+-> foundry-ws-bingcustom: 
+resp_0568a8d6d0bb5a0f006a158dbfd2e0819594a0f4af42ed6700
+-> agentfx-bing: resp_0435f2f09f2335a1006a158dd39414819099d4f2066f8bcd9d
+   foundry-bing-grounding-custom: bing_queries=1  cost=$0.0467
+   foundry-ws-bingcustom: bing_queries=14  cost=$0.0484
+   foundry-ws-bing: bing_queries=14  cost=$0.0489
+   foundry-ws-bing-fast: bing_queries=1  cost=$0.0724
+   foundry-bing-grounding: bing_queries=1  cost=$0.0444
+   agentfx-bing: not reconciled (lower bound retained)
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ Summary ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  Web-search comparison ΓÇö query: 'What are the current individual income tax   
+             brackets in South Africa for the 2025/2026 tax year?'             
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé bacΓÇª Γöé moΓÇª Γöé in_ΓÇª Γöé caΓÇª Γöé outΓÇª Γöé toΓÇª Γöé ws_ΓÇª Γöé biΓÇª Γöé latΓÇª Γöé coΓÇª Γöé ansΓÇª Γöé noΓÇª Γöé
+Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöñ
+Γöé fouΓÇª Γöé gpΓÇª Γöé 3902 Γöé 0   Γöé 448  Γöé 43ΓÇª Γöé 0    Γöé 1   Γöé 29.ΓÇª Γöé 0.ΓÇª Γöé 1155 Γöé biΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé s    Γöé USD Γöé chaΓÇª Γöé frΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé FoΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé App Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé InΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé chΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé spΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé (tΓÇª Γöé
+Γöé fouΓÇª Γöé gpΓÇª Γöé 5361 Γöé 0   Γöé 499  Γöé 58ΓÇª Γöé 0    Γöé 1   Γöé 15.ΓÇª Γöé 0.ΓÇª Γöé 1393 Γöé biΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé s    Γöé USD Γöé chaΓÇª Γöé frΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé FoΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé App Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé InΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé chΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé spΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé (tΓÇª Γöé
+Γöé fouΓÇª Γöé gpΓÇª Γöé 106ΓÇª Γöé 43ΓÇª Γöé 549  Γöé 11ΓÇª Γöé 1    Γöé 14  Γöé 34.ΓÇª Γöé 0.ΓÇª Γöé 1482 Γöé biΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé s    Γöé USD Γöé chaΓÇª Γöé frΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé FoΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé App Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé InΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé chΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé spΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé (tΓÇª Γöé
+Γöé fouΓÇª Γöé gpΓÇª Γöé 171ΓÇª Γöé 0   Γöé 386  Γöé 17ΓÇª Γöé 1    Γöé 1   Γöé 8.90 Γöé 0.ΓÇª Γöé 1113 Γöé biΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé s    Γöé USD Γöé chaΓÇª Γöé frΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé FoΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé App Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé InΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé chΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé spΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé (tΓÇª Γöé
+Γöé fouΓÇª Γöé gpΓÇª Γöé 102ΓÇª Γöé 44ΓÇª Γöé 568  Γöé 10ΓÇª Γöé 1    Γöé 14  Γöé 19.ΓÇª Γöé 0.ΓÇª Γöé 1583 Γöé biΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé s    Γöé USD Γöé chaΓÇª Γöé frΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé FoΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé App Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé InΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé chΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé spΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé (tΓÇª Γöé
+Γöé ageΓÇª Γöé gpΓÇª Γöé 106ΓÇª Γöé ΓÇö   Γöé 500  Γöé 11ΓÇª Γöé 1    Γöé 1   Γöé 17.ΓÇª Γöé 0.ΓÇª Γöé 1396 Γöé biΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé s    Γöé USD Γöé chaΓÇª Γöé frΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé agΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé chΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé spΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé (sΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé acΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé BiΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé faΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé hiΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé by  Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé FoΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé seΓÇª Γöé
+Γöé ageΓÇª Γöé ΓÇö   Γöé ΓÇö    Γöé ΓÇö   Γöé ΓÇö    Γöé ΓÇö   Γöé ΓÇö    Γöé ΓÇö   Γöé ΓÇö    Γöé ΓÇö   Γöé ΓÇö    Γöé skΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé (sΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé ENΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé to  Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé enΓÇª Γöé
+Γöé opeΓÇª Γöé ΓÇö   Γöé ΓÇö    Γöé ΓÇö   Γöé ΓÇö    Γöé ΓÇö   Γöé ΓÇö    Γöé ΓÇö   Γöé ΓÇö    Γöé ΓÇö   Γöé ΓÇö    Γöé skΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé (sΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé ENΓÇª Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé to  Γöé
+Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé     Γöé      Γöé enΓÇª Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+Wrote CSV : C:\Users\sarrabelly\Documents\GitHub\websearch-bench\results.csv
+Wrote HTML: C:\Users\sarrabelly\Documents\GitHub\websearch-bench\results.html
