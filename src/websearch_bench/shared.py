@@ -274,7 +274,7 @@ def debug_dump(backend: str, payload: Any) -> str | None:
     def _serialize(obj: Any) -> Any:
         if hasattr(obj, "model_dump"):
             try:
-                return obj.model_dump()
+                return obj.model_dump(warnings=False)
             except Exception:
                 pass
         if hasattr(obj, "__dict__"):
@@ -697,6 +697,11 @@ def setup_tracing(console: Console | None = None) -> None:
     # the chat/agent spans carry gen_ai.* attributes (input.messages, etc.).
     os.environ.setdefault("AZURE_EXPERIMENTAL_ENABLE_GENAI_TRACING", "true")
     os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "true")
+    # azure-ai-projects 2.1.0 _append_to_message_attribute crashes on
+    # NonRecordingSpan in the FoundryChatClient path; disable client-side
+    # Responses instrumentation to avoid the crash. Server-side spans
+    # (emitted by the Foundry service) are unaffected.
+    os.environ.setdefault("AZURE_TRACING_GEN_AI_INSTRUMENT_RESPONSES_API", "false")
     try:
         from agent_framework.observability import create_resource, enable_instrumentation
         from azure.monitor.opentelemetry import configure_azure_monitor
