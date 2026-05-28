@@ -23,7 +23,6 @@ _BACKEND_MODULES: list[str] = [
     "websearch_bench.backends.foundry_ws_bingcustom",
     "websearch_bench.backends.agentfx_ws",
     "websearch_bench.backends.agentfx_ws_cached",
-    "websearch_bench.backends.openai_ws",
 ]
 
 

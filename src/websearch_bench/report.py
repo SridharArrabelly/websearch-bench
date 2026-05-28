@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import html
 import json
-from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
@@ -16,7 +15,6 @@ from .pricing import (
     BING_CUSTOM_USD_PER_1K,
     BING_GROUNDING_USD_PER_1K,
     MODEL_PRICING_PER_1K,
-    OPENAI_WEB_SEARCH_USD_PER_1K,
 )
 from .shared import RunMetrics
 
@@ -102,7 +100,6 @@ def render_html(
             "model_per_1k_tokens": MODEL_PRICING_PER_1K,
             "bing_grounding_per_1k_calls": BING_GROUNDING_USD_PER_1K,
             "bing_custom_per_1k_calls": BING_CUSTOM_USD_PER_1K,
-            "openai_web_search_per_1k_calls": OPENAI_WEB_SEARCH_USD_PER_1K,
         },
         indent=2,
     )
@@ -181,13 +178,12 @@ def render_html(
 <details><summary>Show pricing constants used for cost estimation</summary>
 <pre>{html.escape(pricing_json)}</pre>
 <p>Override via env vars (<code>BING_GROUNDING_USD_PER_1K</code>,
-<code>BING_CUSTOM_USD_PER_1K</code>, <code>OPENAI_WEB_SEARCH_USD_PER_1K</code>)
+<code>BING_CUSTOM_USD_PER_1K</code>)
 or edit <code>src/websearch_bench/pricing.py</code>. Verify against the official
 pages before quoting:
 <a href="https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/">Azure OpenAI</a>,
 <a href="https://www.microsoft.com/bing/apis/grounding-pricing">Bing Grounding</a>,
-<a href="https://www.microsoft.com/bing/apis/pricing">Bing Custom Search</a>,
-<a href="https://openai.com/api/pricing/">OpenAI Responses + web_search</a>.</p>
+<a href="https://www.microsoft.com/bing/apis/pricing">Bing Custom Search</a>.</p>
 </details>
 
 <footer>
@@ -247,7 +243,3 @@ def write_html(
     )
     path.write_text(rendered, encoding="utf-8")
     return path.resolve()
-
-
-# Suppress unused-import warning from asdict; kept for future JSON sidecar.
-_ = asdict

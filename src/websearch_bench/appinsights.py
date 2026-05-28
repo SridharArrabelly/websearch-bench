@@ -25,7 +25,6 @@ import aiohttp
 
 from websearch_bench.auth import make_credential
 
-
 _APPID_RE = re.compile(r"ApplicationId=([0-9a-fA-F-]+)")
 _APPINSIGHTS_SCOPE = "https://api.applicationinsights.io/.default"
 _APPINSIGHTS_BASE = "https://api.applicationinsights.io/v1/apps"

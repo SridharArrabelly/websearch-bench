@@ -4,10 +4,10 @@ Cache hits return the previous answer without calling Bing, which is the
 main lever for cutting cost on repeat queries.
 
 CLI:
-    python -m websearch_bench.backends.agentfx_bing_cached
-    python -m websearch_bench.backends.agentfx_bing_cached "What is the medical tax credit for 2025?"
-    python -m websearch_bench.backends.agentfx_bing_cached --no-cache "..."
-    python -m websearch_bench.backends.agentfx_bing_cached --clear-cache
+    python -m websearch_bench.backends.agentfx_ws_cached
+    python -m websearch_bench.backends.agentfx_ws_cached "What is the medical tax credit for 2025?"
+    python -m websearch_bench.backends.agentfx_ws_cached --no-cache "..."
+    python -m websearch_bench.backends.agentfx_ws_cached --clear-cache
 """
 
 from __future__ import annotations
@@ -23,29 +23,21 @@ import time
 from dataclasses import dataclass
 
 import redis.asyncio as redis
-from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.logging import RichHandler
 
 from websearch_bench.auth import make_credential
-from websearch_bench.pricing import estimate_cost
-from websearch_bench.appinsights import find_response_id
+from websearch_bench.backends.agentfx_ws import build_agent
 from websearch_bench.shared import (
-    ALLOWED_DOMAINS,
     MODEL,
-    SEARCH_CONTEXT_SIZE,
-    SHARED_INSTRUCTIONS,
     SHARED_QUERY,
-    USER_COUNTRY,
     RunMetrics,
     Timer,
-    count_bing_queries_in_agent_response,
-    debug_dump,
-    count_web_search_calls_in_agent_response,
+    metrics_from_agentfx_result,
     print_metrics,
-    usage_from_agent_framework,
+    setup_tracing,
 )
 
 BACKEND_NAME = "agentfx-bing-cached"
@@ -57,14 +49,6 @@ DEFAULT_CACHE_TTL_HOURS = 24
 
 console = Console()
 logger = logging.getLogger("websearch_bench.agentfx_bing_cached")
-
-try:
-    from agent_framework.observability import enable_instrumentation
-    from azure.monitor.opentelemetry import configure_azure_monitor
-
-    _HAS_AZ_MONITOR = True
-except ImportError:
-    _HAS_AZ_MONITOR = False
 
 
 @dataclass(frozen=True)
@@ -135,21 +119,6 @@ def _make_redis_client(url: str) -> redis.Redis:
     return redis.from_url(url, decode_responses=True)
 
 
-def _build_agent(client: FoundryChatClient) -> Agent:
-    web_search_tool = client.get_web_search_tool(
-        user_location={"country": USER_COUNTRY},
-        allowed_domains=ALLOWED_DOMAINS,
-        search_context_size=SEARCH_CONTEXT_SIZE,
-    )
-    return Agent(
-        client=client,
-        name="agentfx-bing-cached",
-        instructions=SHARED_INSTRUCTIONS,
-        tools=[web_search_tool],
-        description="Agent Framework + Foundry Bing benchmark backend (cached).",
-    )
-
-
 async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetrics:
     settings = Settings.from_env()
     redis_client = _make_redis_client(settings.redis_url)
@@ -179,49 +148,26 @@ async def ask(query: str = SHARED_QUERY, *, use_cache: bool = True) -> RunMetric
                 credential=credential,
                 model=settings.model,
             )
-            agent = _build_agent(client)
+            agent = build_agent(
+                client,
+                name="agentfx-bing-cached",
+                description="Agent Framework + Foundry Bing benchmark backend (cached).",
+            )
             console.print(f"[bold cyan]User:[/bold cyan] {query}")
             with Timer() as t:
                 result = await agent.run(query)
 
         await cache.put(settings.model, query, result.text)
         console.print(f"[bold green]Agent:[/bold green] {result.text}")
-
-        _dump = debug_dump(BACKEND_NAME, result)
-        if _dump:
-            console.print(f"[dim]Debug dump: {_dump}[/dim]")
-        usage = usage_from_agent_framework(result)
-        web_search_calls = count_web_search_calls_in_agent_response(result)
-        bing_queries = count_bing_queries_in_agent_response(result)
-        metrics = RunMetrics(
-            backend=f"{BACKEND_NAME} (miss)",
-            model=settings.model,
-            input_tokens=usage.get("input_tokens"),
-            cached_input_tokens=usage.get("cached_input_tokens"),
-            output_tokens=usage.get("output_tokens"),
-            total_tokens=usage.get("total_tokens"),
-            web_search_calls=web_search_calls,
-            bing_queries=bing_queries,
-            latency_s=round(t.elapsed, 2),
-            answer_chars=len(result.text or ""),
-            answer=result.text or "",
+        # Pricing routes on the prefix "agentfx" — pass that as cost_backend
+        # so the "(miss)" suffix in the displayed backend label doesn't break
+        # the lookup.
+        return metrics_from_agentfx_result(
+            f"{BACKEND_NAME} (miss)", settings.model, result, t.elapsed,
             notes="cache miss — Bing called, result cached (bing_queries lower bound; see App Insights)",
+            cost_backend="agentfx-bing",
+            console=console,
         )
-        metrics.cost_usd = round(
-            estimate_cost(
-                backend="agentfx-bing",
-                model=metrics.model,
-                input_tokens=metrics.input_tokens,
-                output_tokens=metrics.output_tokens,
-                cached_input_tokens=metrics.cached_input_tokens,
-                web_search_calls=metrics.web_search_calls if metrics.web_search_calls else 1,
-                bing_queries=metrics.bing_queries if metrics.bing_queries else None,
-            ),
-            4,
-        )
-        metrics.response_id = find_response_id(result)
-        print_metrics(metrics, console)
-        return metrics
     finally:
         await redis_client.aclose()
 
@@ -281,9 +227,7 @@ def main() -> None:
         pass
     load_dotenv(override=True)
     _configure_logging()
-    if _HAS_AZ_MONITOR and os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
-        configure_azure_monitor()
-        enable_instrumentation(enable_sensitive_data=True)
+    setup_tracing(console)
     asyncio.run(_amain())
 
 

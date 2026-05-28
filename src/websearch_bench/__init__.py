@@ -2,14 +2,13 @@
 
 Stable public API:
     from websearch_bench import RunMetrics, SHARED_QUERY, estimate_cost
-    from websearch_bench.backends import BACKENDS
+    from websearch_bench.backends import discover
 """
 
 from .pricing import estimate_cost
 from .shared import (
     ALLOWED_DOMAINS,
     MODEL,
-    OPENAI_MODEL,
     SEARCH_CONTEXT_SIZE,
     SHARED_INSTRUCTIONS,
     SHARED_QUERY,
@@ -23,7 +22,6 @@ from .shared import (
 __all__ = [
     "ALLOWED_DOMAINS",
     "MODEL",
-    "OPENAI_MODEL",
     "SEARCH_CONTEXT_SIZE",
     "SHARED_INSTRUCTIONS",
     "SHARED_QUERY",

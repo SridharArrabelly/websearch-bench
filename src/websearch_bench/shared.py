@@ -14,13 +14,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from dotenv import load_dotenv
-from rich.console import Console, Group
+from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-# Load .env before reading any module-level env vars so MODEL / MODEL_FAST /
-# OPENAI_MODEL pick up the user's overrides at import time. Backends still
+# Load .env before reading any module-level env vars so MODEL / MODEL_FAST
+# pick up the user's overrides at import time. Backends still
 # call load_dotenv(override=True) inside run() for their own per-run vars.
 load_dotenv()
 
@@ -46,19 +46,40 @@ SHARED_INSTRUCTIONS: str = (
 MODEL: str = os.getenv("MODEL", "gpt-5.1")
 
 # A non-reasoning model used by the *-fast WebSearchTool variant to test
-# OpenAI's "non-reasoning web search" path (1 search, no fan-out).
-# Override via MODEL_FAST env var. Must be deployed in your Foundry project.
-MODEL_FAST: str = os.getenv("MODEL_FAST", "gpt-4.1-mini")
-
-# The OpenAI direct backend can only use OpenAI-hosted models; choose a
-# comparable one with OPENAI_MODEL.
-OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5.1")
+# the "non-reasoning web search" path (1 search, no fan-out). Default
+# matches the model the South Africa PTU customer is pinned to. Override
+# via MODEL_FAST env var. Must be deployed in your Foundry project.
+MODEL_FAST: str = os.getenv("MODEL_FAST", "gpt-4o")
 
 # Web-search settings. Keep identical across backends.
 USER_COUNTRY: str = "ZA"
 USER_CITY: str = "Johannesburg"
 USER_REGION: str = "Gauteng"
-ALLOWED_DOMAINS: list[str] = ["www.sars.gov.za"]
+def _parse_allowed_domains(raw: str | None) -> list[str]:
+    """Parse a comma- or whitespace-separated list of domains from env.
+
+    Accepts full URLs (``https://www.sars.gov.za/``) or bare hostnames
+    (``www.sars.gov.za``) and normalizes to the hostname form expected by
+    Bing's ``allowed_domains`` filter.
+    """
+    if not raw:
+        return ["www.sars.gov.za"]
+    items: list[str] = []
+    for chunk in raw.replace(";", ",").split(","):
+        item = chunk.strip()
+        if not item:
+            continue
+        # Strip scheme if a URL was provided.
+        if "://" in item:
+            item = item.split("://", 1)[1]
+        # Strip path / trailing slash — Bing wants the hostname only.
+        item = item.split("/", 1)[0].strip().rstrip(".")
+        if item:
+            items.append(item)
+    return items or ["www.sars.gov.za"]
+
+
+ALLOWED_DOMAINS: list[str] = _parse_allowed_domains(os.getenv("ALLOWED_DOMAINS"))
 SEARCH_CONTEXT_SIZE: str = "low"  # one of: "low" | "medium" | "high"
 
 
@@ -316,11 +337,6 @@ def usage_from_openai_response(response: Any) -> dict[str, int | None]:
     }
 
 
-def count_search_calls_in_openai_output(response: Any) -> int:
-    """Backwards-compatible alias for ``count_web_search_calls_in_openai_output``."""
-    return count_web_search_calls_in_openai_output(response)
-
-
 def count_web_search_calls_in_openai_output(response: Any) -> int:
     """Count ``web_search_call`` items in an OpenAI/Foundry Responses object.
 
@@ -434,44 +450,6 @@ def count_bing_queries_in_openai_output(response: Any) -> int | None:
     return max(sum_queries, citation_count)
 
 
-# Item types in the OpenAI/Foundry Responses ``output`` array that represent
-# a tool invocation. Any item whose ``type`` ends in ``_call`` is a tool call;
-# the explicit list documents what we currently know about.
-_OPENAI_TOOL_CALL_TYPES = {
-    "web_search_call",
-    "file_search_call",
-    "code_interpreter_call",
-    "image_generation_call",
-    "computer_call",
-    "function_call",
-    "local_shell_call",
-    "mcp_call",
-    "mcp_list_tools",
-    "mcp_approval_request",
-}
-
-
-def count_tool_calls_in_openai_output(response: Any) -> int:
-    """Count *all* tool invocations in an OpenAI/Foundry Responses object.
-
-    For the current bench this equals ``count_web_search_calls_in_openai_output``
-    because web_search is the only tool we attach. The two diverge once you
-    add function/MCP/code-interpreter tools.
-    """
-    output = getattr(response, "output", None) or []
-    count = 0
-    for item in output:
-        t = getattr(item, "type", None) or ""
-        if t in _OPENAI_TOOL_CALL_TYPES or t.endswith("_call"):
-            count += 1
-    return count
-
-
-def count_search_calls_in_agent_response(result: Any) -> int | None:
-    """Backwards-compatible alias for ``count_web_search_calls_in_agent_response``."""
-    return count_web_search_calls_in_agent_response(result)
-
-
 def count_bing_queries_in_agent_response(result: Any) -> int | None:
     """Count Bing query results returned to the model via the AF response.
 
@@ -522,36 +500,6 @@ def count_web_search_calls_in_agent_response(result: Any) -> int | None:
                 name = (getattr(content, "name", "") or "").lower()
                 if "search" in name:
                     count += 1
-    return count
-
-
-# agent_framework Content types that represent a tool invocation (anything
-# that triggered remote/sdk work). Used for the generic ``tool_calls`` metric.
-_AF_TOOL_CALL_TYPES = {
-    "function_call",
-    "search_tool_call",
-    "code_interpreter_tool_call",
-    "image_generation_tool_call",
-    "mcp_server_tool_call",
-    "shell_tool_call",
-}
-
-
-def count_tool_calls_in_agent_response(result: Any) -> int | None:
-    """Count *all* tool invocations across all messages of an AF response.
-
-    Equals ``count_web_search_calls_in_agent_response`` when web_search is the
-    only attached tool; will diverge once you add function/MCP tools.
-    """
-    messages = getattr(result, "messages", None)
-    if not messages:
-        return None
-    count = 0
-    for msg in messages:
-        for content in getattr(msg, "contents", None) or []:
-            ctype = getattr(content, "type", None) or ""
-            if ctype in _AF_TOOL_CALL_TYPES or ctype.endswith("_tool_call"):
-                count += 1
     return count
 
 
@@ -614,3 +562,158 @@ def usage_from_agent_framework(result: Any) -> dict[str, int | None]:
                 totals[k] += int(n[k])
                 saw_any = True
     return totals if saw_any else {}
+
+
+# ---------------------------------------------------------------------------
+# Per-backend metrics builders. Every backend's run() shrinks to: build agent,
+# call the API, then hand the response to one of these. They centralize the
+# debug_dump -> usage -> count -> RunMetrics -> cost_usd -> print pipeline so
+# the backends stay close to "just the SDK call" and divergence stays visible.
+# ---------------------------------------------------------------------------
+
+
+def metrics_from_openai_response(
+    backend: str,
+    model: str,
+    response: Any,
+    elapsed_s: float,
+    *,
+    notes: str | None = None,
+    console: Console | None = None,
+) -> RunMetrics:
+    """Build a ``RunMetrics`` from an OpenAI/Foundry Responses-API object."""
+    from .pricing import estimate_cost  # local: avoid cycle at import time
+
+    answer = getattr(response, "output_text", "") or ""
+    _dump = debug_dump(backend, response)
+    if _dump and console is not None:
+        console.print(f"[dim]Debug dump: {_dump}[/dim]")
+
+    usage = usage_from_openai_response(response)
+    m = RunMetrics(
+        backend=backend,
+        model=model,
+        input_tokens=usage.get("input_tokens"),
+        cached_input_tokens=usage.get("cached_input_tokens"),
+        output_tokens=usage.get("output_tokens"),
+        total_tokens=usage.get("total_tokens"),
+        web_search_calls=count_web_search_calls_in_openai_output(response),
+        bing_queries=count_bing_queries_in_openai_output(response),
+        latency_s=round(elapsed_s, 2),
+        answer_chars=len(answer),
+        answer=answer,
+        notes=notes,
+    )
+    m.cost_usd = round(
+        estimate_cost(
+            backend=m.backend,
+            model=m.model,
+            input_tokens=m.input_tokens,
+            output_tokens=m.output_tokens,
+            cached_input_tokens=m.cached_input_tokens,
+            web_search_calls=m.web_search_calls,
+            bing_queries=m.bing_queries,
+        ),
+        4,
+    )
+    m.response_id = getattr(response, "id", None)
+    if console is not None:
+        print_metrics(m, console)
+    return m
+
+
+def metrics_from_agentfx_result(
+    backend: str,
+    model: str,
+    result: Any,
+    elapsed_s: float,
+    *,
+    notes: str | None = None,
+    cost_backend: str | None = None,
+    console: Console | None = None,
+) -> RunMetrics:
+    """Build a ``RunMetrics`` from an agent_framework ``AgentResponse``.
+
+    ``cost_backend`` overrides the label used for tool-cost routing in
+    ``pricing.tool_cost`` (useful when ``backend`` has a suffix like
+    ``" (miss)"`` that doesn't match the pricing prefix rules).
+    """
+    from .appinsights import find_response_id  # local: appinsights is heavy
+    from .pricing import estimate_cost  # local: avoid cycle at import time
+
+    answer = getattr(result, "text", "") or ""
+    _dump = debug_dump(backend, result)
+    if _dump and console is not None:
+        console.print(f"[dim]Debug dump: {_dump}[/dim]")
+
+    usage = usage_from_agent_framework(result)
+    wsc = count_web_search_calls_in_agent_response(result)
+    bq = count_bing_queries_in_agent_response(result)
+    m = RunMetrics(
+        backend=backend,
+        model=model,
+        input_tokens=usage.get("input_tokens"),
+        cached_input_tokens=usage.get("cached_input_tokens"),
+        output_tokens=usage.get("output_tokens"),
+        total_tokens=usage.get("total_tokens"),
+        web_search_calls=wsc,
+        bing_queries=bq,
+        latency_s=round(elapsed_s, 2),
+        answer_chars=len(answer),
+        answer=answer,
+        notes=notes,
+    )
+    # Agent Framework can collapse the outer call count when the SDK fan-out
+    # is hidden; fall back to 1 so we still bill a tool call.
+    billable_wsc = m.web_search_calls if m.web_search_calls else 1
+    m.cost_usd = round(
+        estimate_cost(
+            backend=cost_backend or m.backend,
+            model=m.model,
+            input_tokens=m.input_tokens,
+            output_tokens=m.output_tokens,
+            cached_input_tokens=m.cached_input_tokens,
+            web_search_calls=billable_wsc,
+            bing_queries=m.bing_queries if m.bing_queries else None,
+        ),
+        4,
+    )
+    m.response_id = find_response_id(result)
+    if console is not None:
+        print_metrics(m, console)
+    return m
+
+
+def setup_tracing(console: Console | None = None) -> None:
+    """Enable Azure Monitor + agent_framework OTel instrumentation if available.
+
+    No-op when ``APPLICATIONINSIGHTS_CONNECTION_STRING`` is unset. Safe to call
+    more than once — ``configure_azure_monitor`` is idempotent for our purposes
+    (subsequent calls re-attach exporters but don't crash).
+    """
+    if not os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
+        return
+    # These env vars must be set BEFORE the SDK clients are instantiated so
+    # the chat/agent spans carry gen_ai.* attributes (input.messages, etc.).
+    os.environ.setdefault("AZURE_EXPERIMENTAL_ENABLE_GENAI_TRACING", "true")
+    os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "true")
+    # azure-ai-projects 2.1.0 _append_to_message_attribute crashes on
+    # NonRecordingSpan in the FoundryChatClient path; disable client-side
+    # Responses instrumentation to avoid the crash. Server-side spans
+    # (emitted by the Foundry service) are unaffected.
+    os.environ.setdefault("AZURE_TRACING_GEN_AI_INSTRUMENT_RESPONSES_API", "false")
+    try:
+        from agent_framework.observability import create_resource, enable_instrumentation
+        from azure.monitor.opentelemetry import configure_azure_monitor
+    except ImportError:
+        return
+    try:
+        configure_azure_monitor(
+            connection_string=os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"],
+            resource=create_resource(),
+            enable_live_metrics=True,
+        )
+        enable_instrumentation(enable_sensitive_data=True)
+    except Exception as exc:
+        if console is not None:
+            console.print(f"[yellow]Tracing setup skipped: {exc}[/yellow]")

@@ -15,10 +15,10 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
-from websearch_bench.backends import discover
 from websearch_bench.appinsights import reconcile_metrics
+from websearch_bench.backends import discover
 from websearch_bench.report import write_html
-from websearch_bench.shared import MODEL, SHARED_QUERY, RunMetrics
+from websearch_bench.shared import MODEL, SHARED_QUERY, RunMetrics, setup_tracing
 
 console = Console()
 RESULTS_CSV = Path.cwd() / "results.csv"
@@ -55,9 +55,11 @@ def _is_disabled(label: str) -> bool:
 async def run_all() -> list[RunMetrics]:
     load_dotenv(override=True)
 
+    modules = discover()
+
     # Detect stale/typo'd ENABLE_* vars so a rename doesn't silently run
     # everything because the user's .env still uses the old names.
-    valid_enable_vars = {_enable_var_for(getattr(m, "BACKEND_NAME", m.__name__)) for m in discover()}
+    valid_enable_vars = {_enable_var_for(getattr(m, "BACKEND_NAME", m.__name__)) for m in modules}
     stray = sorted(
         k for k in os.environ
         if k.startswith("ENABLE_") and k not in valid_enable_vars
@@ -74,7 +76,7 @@ async def run_all() -> list[RunMetrics]:
         )
 
     results: list[RunMetrics] = []
-    for module in discover():
+    for module in modules:
         label: str = getattr(module, "BACKEND_NAME", module.__name__)
         required: tuple[str, ...] = getattr(module, "REQUIRED_ENV", ())
         if _is_disabled(label):
@@ -162,42 +164,9 @@ async def reconcile_all(results: list[RunMetrics]) -> None:
     await asyncio.gather(*(_one(r) for r in targets))
 
 
-def _setup_tracing() -> None:
-    """Enable Azure Monitor + agent_framework OTel instrumentation, if available.
-
-    Without this the agent_framework backends emit no spans and reconcile
-    can't find their chat span in App Insights. The Foundry-hosted backends
-    don't need this — their server-side instrumentation emits spans regardless.
-    Safe to call when APPLICATIONINSIGHTS_CONNECTION_STRING is unset (no-op).
-    """
-    if not os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
-        return
-    # Enable the Azure SDK's experimental GenAI tracing so chat/agent
-    # spans carry the full gen_ai.* attributes (input.messages, etc.).
-    # Must be set BEFORE the SDK clients are instantiated.
-    os.environ.setdefault("AZURE_EXPERIMENTAL_ENABLE_GENAI_TRACING", "true")
-    os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "true")
-    # azure-ai-projects 2.1.0 _append_to_message_attribute crashes on NonRecordingSpan in FoundryChatClient path; disable client-side Responses instrumentation.
-    os.environ.setdefault("AZURE_TRACING_GEN_AI_INSTRUMENT_RESPONSES_API", "false")
-    try:
-        from azure.monitor.opentelemetry import configure_azure_monitor
-        from agent_framework.observability import create_resource, enable_instrumentation
-    except ImportError:
-        return
-    try:
-        configure_azure_monitor(
-            connection_string=os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"],
-            resource=create_resource(),
-            enable_live_metrics=True,
-        )
-        enable_instrumentation(enable_sensitive_data=True)
-    except Exception as exc:
-        console.print(f"[yellow]Tracing setup skipped: {exc}[/yellow]")
-
-
 async def amain() -> None:
     load_dotenv(override=True)
-    _setup_tracing()
+    setup_tracing(console)
     results = await run_all()
     await reconcile_all(results)
     console.rule("[bold]Summary")
