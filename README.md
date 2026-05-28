@@ -53,6 +53,7 @@ websearch-bench/
         ├── shared.py                    # query, model, instructions, RunMetrics
         ├── pricing.py                   # USD constants + estimate_cost()
         ├── bing_usage.py                # Azure Monitor TotalCalls query — validates real Bing billing
+        ├── cost_lookup.py               # Azure Cost Management query — validates WebSearchTool billing
         ├── auth.py                      # make_credential() — narrowed DefaultAzureCredential
         ├── appinsights.py               # fetch_chat_span() + reconcile_metrics()
         ├── compare.py                   # harness — runs all backends, writes results.csv/html
@@ -382,11 +383,49 @@ uv run python -m websearch_bench.bing_usage \
 > ⚠️ **`bing_usage.py` does NOT capture WebSearchTool charges.**
 > WebSearchTool / Responses `web_search` routes through Microsoft-managed
 > Bing infrastructure, not the user's `Microsoft.Bing/accounts` resource,
-> so its `TotalCalls` metric won't move. To audit WebSearchTool spend, open
-> Azure Cost Analysis on your **Foundry / Cognitive Services account** and
-> filter the meter to "Grounding with Bing Search" (or "Grounding with Bing
-> Custom Search"). The harness's reported `cost` for those backends is the
-> best client-side estimate available.
+> so its `TotalCalls` metric won't move. To audit WebSearchTool spend, use
+> `cost_lookup.py` (see below) — or open Azure Cost Analysis on your
+> **Foundry / Cognitive Services account** manually and filter the meter
+> to "Grounding with Bing Search" (or "Grounding with Bing Custom
+> Search"). The harness's reported `cost` for those backends is the best
+> client-side estimate available.
+
+### Validating WebSearchTool billing (`cost_lookup.py`)
+
+`bing_usage.py` cannot see WebSearchTool charges because they route
+through Microsoft-managed Bing infrastructure and bill on the **Foundry
+account** itself. `cost_lookup.py` queries Azure Cost Management
+(`Microsoft.Consumption/usageDetails`) for that account over a chosen
+time window, so you can answer the key billing question for
+`foundry-ws-*` and `agentfx-*`:
+
+> For N runs of `foundry-ws-bing`, does Cost Management record N units
+> (per outer `web_search_call`) or N × fan-out units (per inner Bing
+> transaction)?
+
+```powershell
+# Default: last 24h, filter to Bing/Search meters
+uv run python -m websearch_bench.cost_lookup
+
+# Controlled experiment: ran the bench 10 times in this window
+uv run python -m websearch_bench.cost_lookup `
+  --start 2026-05-26T07:00:00Z --end 2026-05-26T07:05:00Z `
+  --runs 10
+
+# Restrict to your Foundry RG
+uv run python -m websearch_bench.cost_lookup --since 48h `
+  --resource-group rg-foundry-prod
+```
+
+Required: `AZURE_SUBSCRIPTION_ID` env var (or `--subscription`), `az
+login`, and **Cost Management Reader** on the subscription / RG.
+
+> ⏳ **24–48h ingestion lag.** Same-day queries typically return empty
+> — that's expected. Run the bench today, query tomorrow.
+
+When `--runs N` is set, the script prints the **qty/run ratio**:
+* ≈ **1.0** → billing is per outer `web_search_call`.
+* ≈ your harness's `bing_q` → billing is per inner Bing transaction.
 
 Required env vars:
 
