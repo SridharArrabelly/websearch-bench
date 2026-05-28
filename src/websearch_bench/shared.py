@@ -19,8 +19,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-# Load .env before reading any module-level env vars so MODEL / MODEL_FAST /
-# OPENAI_MODEL pick up the user's overrides at import time. Backends still
+# Load .env before reading any module-level env vars so MODEL / MODEL_FAST
+# pick up the user's overrides at import time. Backends still
 # call load_dotenv(override=True) inside run() for their own per-run vars.
 load_dotenv()
 
@@ -46,13 +46,10 @@ SHARED_INSTRUCTIONS: str = (
 MODEL: str = os.getenv("MODEL", "gpt-5.1")
 
 # A non-reasoning model used by the *-fast WebSearchTool variant to test
-# OpenAI's "non-reasoning web search" path (1 search, no fan-out).
-# Override via MODEL_FAST env var. Must be deployed in your Foundry project.
-MODEL_FAST: str = os.getenv("MODEL_FAST", "gpt-4.1-mini")
-
-# The OpenAI direct backend can only use OpenAI-hosted models; choose a
-# comparable one with OPENAI_MODEL.
-OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5.1")
+# the "non-reasoning web search" path (1 search, no fan-out). Default
+# matches the model the South Africa PTU customer is pinned to. Override
+# via MODEL_FAST env var. Must be deployed in your Foundry project.
+MODEL_FAST: str = os.getenv("MODEL_FAST", "gpt-4o")
 
 # Web-search settings. Keep identical across backends.
 USER_COUNTRY: str = "ZA"

@@ -9,14 +9,16 @@ Values are still env-overridable for what-if scenarios.
   https://www.microsoft.com/bing/apis/grounding-pricing  →  $35 / 1,000 queries
 - Grounding with Bing Custom Search (legacy SKU $14/1K is being retired in 2025;
   new SKU on the same page is $35/1,000).
-- OpenAI Responses API + ``web_search`` tool:
-  https://openai.com/api/pricing/   →  $10 / 1,000 calls (all models)
-  (``web_search_preview`` for non-reasoning models is priced separately at
-  $25-30 / 1,000; use OPENAI_WEB_SEARCH_USD_PER_1K to override.)
 
 Every tool is billed *per call*. A single user prompt can trigger 0..N
 calls to the web-search tool — the model decides. We report this as
 ``web_search_calls`` per run and use ``cost = calls * price_per_1000 / 1000``.
+
+The WebSearchTool family (``foundry-ws-*``, ``agentfx-*``) is documented as
+billing at the same Grounding-with-Bing rate as the legacy direct tools
+(``foundry-bing-grounding*``) — see https://learn.microsoft.com/azure/foundry/openai/how-to/web-search.
+The charge appears on the Foundry / Cognitive Services account bill rather
+than on the user's ``Microsoft.Bing/accounts`` resource.
 """
 
 from __future__ import annotations
@@ -63,7 +65,6 @@ def _env_float(name: str, default: float) -> float:
 
 BING_GROUNDING_USD_PER_1K: float = _env_float("BING_GROUNDING_USD_PER_1K", 35.0)
 BING_CUSTOM_USD_PER_1K: float = _env_float("BING_CUSTOM_USD_PER_1K", 35.0)
-OPENAI_WEB_SEARCH_USD_PER_1K: float = _env_float("OPENAI_WEB_SEARCH_USD_PER_1K", 10.0)
 
 
 def model_token_cost(
@@ -108,27 +109,26 @@ def tool_cost(
         Grounding with Bing Custom Search incurs costs. Search actions
         incur tool call costs.
 
-    Two distinct billing surfaces:
+    Two distinct billing surfaces — both at the same Grounding-with-Bing
+    rate ($35/1K), just metered against different resources:
 
     1. **Legacy direct tools** — ``BingGroundingTool`` /
        ``BingCustomSearchPreviewTool`` (the ``foundry-bing-grounding*``
        backends). These call the user's *own* ``Microsoft.Bing/accounts``
        resource. Each tool call increments ``TotalCalls`` on that resource
-       (verifiable via ``bing_usage.py``). Billed at the Grounding-with-Bing
-       rate. Pass ``bing_queries`` here.
+       (verifiable via ``bing_usage.py``). Pass ``bing_queries`` here.
 
     2. **WebSearchTool / Responses ``web_search``** — every other backend
-       (``foundry-ws-*``, ``agentfx-*``, ``openai-ws``). These route through
+       (``foundry-ws-*``, ``agentfx-*``). These route through
        Microsoft-managed Bing infra (not the user's Bing resource — its
-       ``TotalCalls`` does *not* increment). Per the docs, this is still
-       Grounding with Bing under the hood and is still billed at the
-       Grounding-with-Bing rate ($35/1K), but the user is charged per
-       *outer* ``web_search_call`` action, not per internal Bing fan-out
-       (the fan-out happens server-side and isn't separately metered to the
-       caller). The charge appears on the Foundry / Cognitive Services
-       account bill as a "Grounding with Bing Search" line item rather than
-       on the user-owned Bing resource. The OpenAI-direct backend
-       (``openai-ws``) hits OpenAI's price list ($10/1K) instead.
+       ``TotalCalls`` does *not* increment). Still Grounding with Bing
+       under the hood and still billed at the Grounding-with-Bing rate,
+       but the user is charged per *outer* ``web_search_call`` action,
+       not per internal Bing fan-out (the fan-out happens server-side and
+       isn't separately metered to the caller — see the caveat in
+       README.md). The charge appears on the Foundry / Cognitive Services
+       account bill as a "Grounding with Bing Search" line item. Verify
+       with ``cost_lookup.py``.
     """
     # Legacy direct tools — billed against user's Bing resource per Bing call.
     if backend.startswith("foundry-bing-grounding-custom"):
@@ -137,11 +137,6 @@ def tool_cost(
     if backend.startswith("foundry-bing-grounding") or backend.startswith("foundry-bing"):
         calls = bing_queries if bing_queries is not None else (web_search_calls or 0)
         return calls * BING_GROUNDING_USD_PER_1K / 1000.0
-
-    # OpenAI direct — its own (cheaper) web_search rate.
-    if backend.startswith("openai-ws"):
-        calls = web_search_calls or 0
-        return calls * OPENAI_WEB_SEARCH_USD_PER_1K / 1000.0
 
     # WebSearchTool family on Azure Foundry — Grounding with Bing rate,
     # priced per outer web_search_call (not per internal Bing fan-out).
@@ -173,8 +168,8 @@ def estimate_cost(
     * BingGroundingTool backends bill against the user's Bing resource, so
       ``bing_queries`` (the real Bing transaction count from Foundry's
       ``web.run`` span) is the right billable quantity.
-    * WebSearchTool backends bill via OpenAI's hosted ``web_search`` tool,
-      which charges per *outer* tool call — not per internal Bing fan-out.
+    * WebSearchTool backends bill at the same Grounding-with-Bing rate,
+      but per *outer* tool call — not per internal Bing fan-out.
       ``web_search_calls`` is the right quantity. ``bing_queries`` for these
       backends is observed-only (telemetry), not billable.
     """

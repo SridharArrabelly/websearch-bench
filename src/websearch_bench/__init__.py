@@ -9,7 +9,6 @@ from .pricing import estimate_cost
 from .shared import (
     ALLOWED_DOMAINS,
     MODEL,
-    OPENAI_MODEL,
     SEARCH_CONTEXT_SIZE,
     SHARED_INSTRUCTIONS,
     SHARED_QUERY,
@@ -23,7 +22,6 @@ from .shared import (
 __all__ = [
     "ALLOWED_DOMAINS",
     "MODEL",
-    "OPENAI_MODEL",
     "SEARCH_CONTEXT_SIZE",
     "SHARED_INSTRUCTIONS",
     "SHARED_QUERY",

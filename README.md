@@ -1,41 +1,46 @@
 # websearch-bench
 
 A small Python package — **`websearch_bench`** — that runs the *same* grounded
-web-search question through every popular SDK surface and prints a side-by-side
-table of **tokens, latency, and estimated cost** so you can pick the cheapest
-backend for your workload with eyes open.
+web-search question through every Azure AI Foundry grounding surface and prints
+a side-by-side table of **tokens, latency, and estimated cost** so you can pick
+the cheapest backend for your workload with eyes open.
 
-## Why this exists
+Every backend bills tool calls at the same **Grounding with Bing** rate
+($35 / 1,000 calls). The differences that matter are **what each backend
+exposes** (1 outer call vs N inner Bing transactions), **how token-heavy each
+SDK surface is**, and **where the charge lands on your invoice** (your Bing
+resource vs your Foundry account).
 
-Web-search grounding is available three different ways for the same Azure / OpenAI
-ecosystem, and each one bills differently:
+## Backends
 
-| Backend | Library | Tool plumbing | Per-call charge (besides model tokens) |
+Two tool families × two SDK surfaces, on a Foundry project:
+
+| Backend | Tool family | SDK | Notes |
 | --- | --- | --- | --- |
-| `foundry-ws-bing` | `azure-ai-projects` | `WebSearchTool` on a Foundry `PromptAgentDefinition` (Bing Web Search) | Grounding with Bing Search |
-| `foundry-ws-bing-fast` | `azure-ai-projects` | Same as `foundry-ws-bing` but pinned to a **non-reasoning** model (`MODEL_FAST`, default `gpt-4.1-mini`) — tests OpenAI's "non-reasoning web search" path (1 search, no fan-out) | Grounding with Bing Search (typically 1 Bing call + much smaller input-token bill than `foundry-ws-bing` on `gpt-5.1`) |
-| `foundry-bing-grounding` | `azure-ai-projects` | Legacy `BingGroundingTool` on a `PromptAgentDefinition` (Grounding with Bing Search; single-shot, no `web.run` fan-out) | Grounding with Bing Search (typically ~5K input tokens + 1 Bing call vs ~15K + N for `foundry-ws-bing`) |
-| `foundry-bing-grounding-custom` | `azure-ai-projects` | Legacy `BingCustomSearchPreviewTool` on a `PromptAgentDefinition` (Grounding with Bing Custom Search **preview**; single-shot, no `web.run` fan-out) | Grounding with Bing Custom Search (single-shot variant; domain restriction lives on the Bing Custom instance) |
-| `foundry-ws-bingcustom` | `azure-ai-projects` | `WebSearchTool` + `WebSearchConfiguration` (Bing Custom Search) | Grounding with Bing Custom Search |
-| `agentfx-bing` | `agent-framework-foundry` | `FoundryChatClient.get_web_search_tool(...)` wired into an `Agent` | Grounding with Bing Search |
-| `agentfx-bing-cached` | `agent-framework-foundry` + Redis | Same as above, with Redis answer cache | 0 on cache hit; otherwise as above |
-| `openai-ws` | `openai` | Responses API native `web_search` tool (`allowed_domains`) | OpenAI `web_search` per call |
+| `foundry-bing-grounding` | Legacy `BingGroundingTool` | `azure-ai-projects` (Foundry agent + `agent_reference`) | Single-shot. No server-side `web.run` fan-out. Bills the user's `Microsoft.Bing/accounts` resource. |
+| `foundry-bing-grounding-custom` | Legacy `BingCustomSearchPreviewTool` | `azure-ai-projects` | Single-shot. Domain restriction lives on the Bing Custom Search instance. |
+| `foundry-ws-bing` | `WebSearchTool` (Bing Web Search) | `azure-ai-projects` | Hosted tool. Server-side `web.run` fan-out — one outer `web_search_call` can dispatch many Bing transactions. |
+| `foundry-ws-bing-fast` | `WebSearchTool` (Bing Web Search) | `azure-ai-projects` | Same as above but pinned to `MODEL_FAST` (default `gpt-4o`) — tests the non-reasoning path (typically 1 search, no fan-out). |
+| `foundry-ws-bingcustom` | `WebSearchTool` + `WebSearchConfiguration` (Bing Custom Search) | `azure-ai-projects` | Hosted Custom-Search variant. Allowed-domain list lives on the instance. |
+| `agentfx-bing` | `WebSearchTool` (Bing Web Search) | `agent-framework-foundry` (`FoundryChatClient.get_web_search_tool`) | Agent loop runs **client-side** in the SDK; each tool call is a separate `responses.create()` to Foundry. |
+| `agentfx-bing-cached` | Same as `agentfx-bing` + Redis answer cache | `agent-framework-foundry` + Redis | Reports `(hit)` (cost = 0) or `(miss)` (cost = same as `agentfx-bing`). |
 
-The whole point is that **every backend hits the same model with the same query
-and the same instructions** — so the numbers are comparable. All shared
-workload lives in [`src/websearch_bench/shared.py`](src/websearch_bench/shared.py).
+The whole point: **every backend hits the same model with the same query and
+the same instructions** — so the numbers are comparable. All shared workload
+lives in [`src/websearch_bench/shared.py`](src/websearch_bench/shared.py).
 
-Two of the per-tool knobs can't be wired *uniformly* across SDKs because the
-SDKs themselves don't all expose them. Here's the honest truth:
+### What the SDKs do and don't expose
 
-| Setting | `foundry-bing-grounding` | `foundry-bing-grounding-custom` | `foundry-ws-bing` | `foundry-ws-bingcustom` | `agentfx-bing*` | `openai-ws` |
-| --- | --- | --- | --- | --- | --- | --- |
-| `SEARCH_CONTEXT_SIZE` (`shared.py`) | n/a — `BingGroundingTool` has no context-size knob | n/a — `BingCustomSearchPreviewTool` has no context-size knob | ✅ passed to `WebSearchTool` | ✅ passed to `WebSearchTool` | ✅ passed via `get_web_search_tool` | ❌ not accepted by the OpenAI Responses `web_search` `filters` block |
-| `ALLOWED_DOMAINS` (`.env`, parsed by `shared.py`) | n/a — use a Bing Custom Search connection if you need domain restriction | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed as `WebSearchToolFilters(allowed_domains=…)` | ❌ configure the allowed-domain list on the **Bing Custom Search instance** in the [Bing portal](https://www.customsearch.ai/) (instance-level) | ✅ passed via `get_web_search_tool(allowed_domains=…)` | ✅ passed as `filters.allowed_domains` |
+Two per-tool knobs can't be wired uniformly because the SDKs don't all expose
+them:
 
-So for a strictly apples-to-apples comparison, either accept the limitations
-above or pin the Bing Custom Search instance to the same domain list you've
-hard-coded in `ALLOWED_DOMAINS`.
+| Setting | `foundry-bing-grounding` | `foundry-bing-grounding-custom` | `foundry-ws-bing` | `foundry-ws-bingcustom` | `agentfx-bing*` |
+| --- | --- | --- | --- | --- | --- |
+| `SEARCH_CONTEXT_SIZE` | n/a — `BingGroundingTool` has no context-size knob | n/a — same | ✅ passed to `WebSearchTool` | ✅ passed to `WebSearchTool` | ✅ passed via `get_web_search_tool` |
+| `ALLOWED_DOMAINS` (`.env`) | n/a — use a Bing Custom Search connection if you need domain restriction | ❌ configure on the Bing Custom Search instance in the [Bing portal](https://www.customsearch.ai/) | ✅ passed as `WebSearchToolFilters(allowed_domains=…)` | ❌ configure on the Bing Custom Search instance (same as above) | ✅ passed via `get_web_search_tool(allowed_domains=…)` |
+
+For a strict apples-to-apples comparison, pin the Bing Custom Search instance
+to the same domain list you've set in `ALLOWED_DOMAINS`.
 
 ## Repository layout
 
@@ -52,21 +57,21 @@ websearch-bench/
         ├── __main__.py                  # python -m websearch_bench  → compare
         ├── shared.py                    # query, model, instructions, RunMetrics
         ├── pricing.py                   # USD constants + estimate_cost()
-        ├── bing_usage.py                # Azure Monitor TotalCalls query — validates real Bing billing
-        ├── cost_lookup.py               # Azure Cost Management query — validates WebSearchTool billing
+        ├── bing_usage.py                # Azure Monitor TotalCalls — validates direct Bing tool billing
+        ├── cost_lookup.py               # Azure Cost Management — validates WebSearchTool billing
         ├── auth.py                      # make_credential() — narrowed DefaultAzureCredential
         ├── appinsights.py               # fetch_chat_span() + reconcile_metrics()
         ├── compare.py                   # harness — runs all backends, writes results.csv/html
+        ├── report.py                    # HTML report renderer
         └── backends/
             ├── __init__.py              # registry of backends
-            ├── foundry_bing_grounding.py    # legacy BingGroundingTool (single-shot)
-            ├── foundry_bing_grounding_custom.py  # legacy BingCustomSearchPreviewTool
+            ├── foundry_bing_grounding.py
+            ├── foundry_bing_grounding_custom.py
             ├── foundry_ws_bing.py
-            ├── foundry_ws_bing_fast.py      # WebSearchTool on a non-reasoning model
+            ├── foundry_ws_bing_fast.py
             ├── foundry_ws_bingcustom.py
-            ├── agentfx_ws.py
-            ├── agentfx_ws_cached.py
-            └── openai_ws.py
+            ├── agentfx_ws.py            # label: agentfx-bing
+            └── agentfx_ws_cached.py     # label: agentfx-bing-cached
 ```
 
 Each backend module exposes the same contract:
@@ -87,12 +92,12 @@ Adding a new backend = one file in `backends/` + one line in
 - **[uv](https://docs.astral.sh/uv/getting-started/installation/)** package manager
 - **Azure CLI** (`az`) for local credential sign-in
 - An **Azure AI Foundry** project with:
-  - A deployed chat model (e.g. `gpt-5.1`) — used as `MODEL`
-  - A **Grounding with Bing Search** connection (for `foundry-ws-bing`, `agentfx-bing`, `agentfx-bing-cached`)
-  - A **Grounding with Bing Custom Search** connection + instance (for `foundry-ws-bingcustom`)
-- An **OpenAI API key** (only for `openai-ws`)
+  - A deployed reasoning chat model (e.g. `gpt-5.1`) — used as `MODEL`
+  - A deployed non-reasoning chat model (e.g. `gpt-4o`) — used as `MODEL_FAST`
+  - A **Grounding with Bing Search** connection (for `foundry-bing-grounding`, `foundry-ws-bing*`, `agentfx-bing*`)
+  - A **Grounding with Bing Custom Search** connection + instance (for `foundry-bing-grounding-custom`, `foundry-ws-bingcustom`)
+- (Optional) An **Application Insights** connection string for tracing + true Bing fan-out reconciliation
 - (Optional) A reachable **Redis** instance for `agentfx-bing-cached`
-- (Optional) An **Application Insights** connection string for tracing in `agentfx-bing-cached`
 
 ## Setup
 
@@ -104,8 +109,8 @@ az login
 az account set --subscription <your-subscription-id>
 ```
 
-Your signed-in identity needs the **Azure AI User** role (or equivalent) on the
-Foundry project.
+Your signed-in identity needs the **Azure AI User** role (or equivalent) on
+the Foundry project.
 
 ## Environment
 
@@ -116,39 +121,29 @@ Minimum env vars per backend (set in `.env`):
 | `foundry-bing-grounding` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CONNECTION_NAME` |
 | `foundry-bing-grounding-custom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `foundry-ws-bing` | `PROJECT_ENDPOINT`, `MODEL` |
-| `foundry-ws-bing-fast` | `PROJECT_ENDPOINT`, `MODEL_FAST` (default `gpt-4.1-mini`) |
+| `foundry-ws-bing-fast` | `PROJECT_ENDPOINT`, `MODEL_FAST` (default `gpt-4o`) |
 | `foundry-ws-bingcustom` | `PROJECT_ENDPOINT`, `MODEL`, `BING_CUSTOM_SEARCH_CONNECTION_ID`, `BING_CUSTOM_SEARCH_INSTANCE_NAME` |
 | `agentfx-bing` | `PROJECT_ENDPOINT`, `MODEL` |
 | `agentfx-bing-cached` | above + `REDIS_URL` (and a running Redis) |
-| `openai-ws` | `OPENAI_API_KEY`, `ENABLE_OPENAI_WS=1`, optional `OPENAI_MODEL` |
-
-`openai-ws` is **opt-in** — it bills against your OpenAI subscription
-(token rates + $10/1k for the `web_search` tool). Set
-`ENABLE_OPENAI_WS=1` to include it in the comparison; it's skipped by
-default so you can run the Azure/Foundry surfaces without an OpenAI key.
 
 ### Toggling backends
 
 Every backend has an `ENABLE_<NAME>` flag derived from its label (upper-case,
 dashes → underscores). The flag accepts `1` / `true` / `yes` / `on` to enable
-and `0` / `false` / `no` / `off` to disable.
+and `0` / `false` / `no` / `off` to disable. **All backends are on by default**
+— set the flag to `0` only when you want to skip a row.
 
-There are **two semantics**: most backends are on-by-default (you only need to
-set the flag to *skip* them), while the OpenAI Responses backend is opt-in
-because it bills your OpenAI subscription separately:
+| Flag | Default |
+| --- | --- |
+| `ENABLE_FOUNDRY_BING_GROUNDING` | enabled |
+| `ENABLE_FOUNDRY_BING_GROUNDING_CUSTOM` | enabled |
+| `ENABLE_FOUNDRY_WS_BING` | enabled |
+| `ENABLE_FOUNDRY_WS_BING_FAST` | enabled |
+| `ENABLE_FOUNDRY_WS_BINGCUSTOM` | enabled |
+| `ENABLE_AGENTFX_BING` | enabled |
+| `ENABLE_AGENTFX_BING_CACHED` | enabled |
 
-| Flag                          | Default     | To run                          | To skip                          |
-| ----------------------------- | ----------- | ------------------------------- | -------------------------------- |
-| `ENABLE_FOUNDRY_BING_GROUNDING`| **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
-| `ENABLE_FOUNDRY_BING_GROUNDING_CUSTOM`| **enabled** | leave unset (or set `=1`) | set `=0` / `false` / `no` / `off`|
-| `ENABLE_FOUNDRY_WS_BING`      | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
-| `ENABLE_FOUNDRY_WS_BING_FAST` | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
-| `ENABLE_FOUNDRY_WS_BINGCUSTOM`| **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
-| `ENABLE_AGENTFX_BING`         | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
-| `ENABLE_AGENTFX_BING_CACHED`  | **enabled** | leave unset (or set `=1`)       | set `=0` / `false` / `no` / `off`|
-| `ENABLE_OPENAI_WS`            | **disabled**| **set `=1`** / `true` / `yes` / `on` | leave unset (or set `=0`)        |
-
-Optional everywhere:
+### Optional everywhere
 
 - `APPLICATIONINSIGHTS_CONNECTION_STRING` — used for **two** things: distributed
   tracing for **every agent_framework backend** (`agentfx-bing`,
@@ -162,10 +157,9 @@ Optional everywhere:
   the full `gen_ai.*` attributes. Your identity needs the **Monitoring Reader**
   or **Log Analytics Reader** role on the App Insights resource for the
   reconciler to work.
-- `BING_GROUNDING_USD_PER_1K`, `BING_CUSTOM_USD_PER_1K`,
-  `OPENAI_WEB_SEARCH_USD_PER_1K` — override the per-1,000-call pricing
-  (verified defaults: $35 / $35 / $10 — see [`pricing.py`](src/websearch_bench/pricing.py)
-  for source links).
+- `BING_GROUNDING_USD_PER_1K`, `BING_CUSTOM_USD_PER_1K` — override the
+  per-1,000-call pricing (verified default: $35 for both — see
+  [`pricing.py`](src/websearch_bench/pricing.py)).
 
 ## Run
 
@@ -182,7 +176,7 @@ the terminal, and writes two artifacts to the current working directory:
 
 - **`results.html`** — self-contained report. Sortable summary table, bar
   charts (cost / total tokens / latency), and each backend's full answer
-  collapsed in a `<details>` block. Open it in any browser. Chart.js is
+  collapsed in a `<details>` block. Open in any browser. Chart.js is
   loaded from a CDN, so the page needs internet to render the charts (the
   table and answers still work offline).
 - **`results.csv`** — same metrics minus the answer text, for spreadsheets
@@ -201,11 +195,10 @@ uv run python -m websearch_bench.backends.foundry_ws_bing_fast
 uv run python -m websearch_bench.backends.foundry_ws_bingcustom
 uv run python -m websearch_bench.backends.agentfx_ws
 uv run python -m websearch_bench.backends.agentfx_ws_cached
-uv run python -m websearch_bench.backends.openai_ws
 ```
 
-Each prints the agent's answer plus a normalized usage block (tokens, web-search
-calls, total tool calls, latency, estimated USD cost).
+Each prints the agent's answer plus a normalized usage block (tokens,
+web-search calls, total tool calls, latency, estimated USD cost).
 
 ## Metrics & cost model
 
@@ -215,8 +208,8 @@ Each run reports a normalized `RunMetrics` row:
 | --- | --- |
 | `input_tokens` / `output_tokens` / `total_tokens` | Model usage as reported by the SDK (OpenAI `response.usage`, Foundry's mirror of it, or `agent_framework`'s `usage_details`). |
 | `cached_input_tokens` | Portion of `input_tokens` served from Azure OpenAI prompt caching. Billed at the **cached_input** rate (≈10× cheaper). Same number surfaced on the Foundry App Insights span as `gen_ai.usage.cached_tokens`. |
-| `web_search_calls` | Number of `web_search_call` items in the response — i.e. distinct tool invocations the model emitted. |
-| `bing_queries` | True Bing transaction count, **reconciled from App Insights** when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set. <br>• For **Foundry-hosted** backends (`foundry-ws-bing`, `foundry-ws-bingcustom`) this is `count(role=="tool")` from the server-side `chat` span's `gen_ai.input.messages` array — the only place the real `web.run` fan-out is visible. The Responses API only exposes a summarized `action.queries`. <br>• For **`agentfx-bing*`** the agent_framework client-side span exposes `search_tool_call` parts in `gen_ai.output.messages` — one per *model-level* call. The actual per-Bing-transaction fan-out is performed by Foundry server-side and is **not visible** to client-side instrumentation, so this value equals `web_search_calls` and is a **lower bound** (notes column says so). To see the true fan-out you need Foundry's own App Insights instance. <br>• For **`openai-ws`** there is no server fan-out — `action.queries` length is exact. |
+| `web_search_calls` | Number of `web_search_call` items in the response — i.e. distinct outer tool invocations the model emitted. **This is the billable quantity for WebSearchTool / agent_framework backends.** |
+| `bing_queries` | True Bing transaction count, **reconciled from App Insights** when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set. <br>• For **Foundry-hosted** backends (`foundry-ws-bing*`, `foundry-ws-bingcustom`) this is `count(role=="tool")` from the server-side `chat` span's `gen_ai.input.messages` array — the only place the real `web.run` fan-out is visible. The Responses API only exposes a summarized `action.queries`. <br>• For **`agentfx-bing*`** the agent_framework client-side span exposes `search_tool_call` parts in `gen_ai.output.messages` — one per *model-level* call. The actual per-Bing-transaction fan-out is performed by Foundry server-side and is **not visible** to client-side instrumentation, so this value equals `web_search_calls` and is a **lower bound** (notes column says so). To see the true fan-out you need Foundry's own App Insights instance. <br>• For the **legacy `foundry-bing-grounding*`** backends there's no fan-out — 1 tool call = 1 Bing transaction. |
 | `latency_s` | Wall-clock seconds from sending the request to receiving the final response. |
 | `cost_usd` | See cost formula below. |
 | `answer_chars` | Length of the agent's final answer text. |
@@ -229,30 +222,35 @@ tokens_$  = (fresh_in           / 1000) * model_input_rate
           + (cached_input_tokens/ 1000) * model_cached_input_rate
           + (output_tokens      / 1000) * model_output_rate
 
-tool_$    = ((bing_queries OR web_search_calls) / 1000) * tool_rate_per_1k
+tool_$    = (billable_calls / 1000) * tool_rate_per_1k
+            # billable_calls = bing_queries for foundry-bing-grounding*
+            #                  web_search_calls for everything else
 
 cost      = tokens_$ + tool_$
 ```
 
 > **Foundry server-side fan-out is reconciled from App Insights.** Foundry's
-> `web.run` extension is one billable "tool execution" from the model's POV but
-> dispatches multiple Bing transactions internally. Each Bing hit appears as a
-> separate `role="tool"` message in the **next** `chat` span's
+> `web.run` extension is one billable "tool execution" from the model's POV
+> but dispatches multiple Bing transactions internally. Each Bing hit appears
+> as a separate `role="tool"` message in the **next** `chat` span's
 > `gen_ai.input.messages` array, but the Responses API only exposes a
 > summarized `action.queries`. So the bench auto-queries App Insights after
 > every Foundry-backed run (using `gen_ai.response.id` as the join key) and
-> overwrites `bing_queries` + `cost_usd` with the truth. Set
+> overwrites `bing_queries` with the truth. Set
 > `APPLICATIONINSIGHTS_CONNECTION_STRING` and grant your identity Monitoring
 > Reader on the App Insights resource. Without it, the column falls back to
 > the `action.queries` lower bound. Typical ingestion lag is 30-90s; the
 > reconciler polls for up to 2 minutes.
 >
 > The fan-out is **variable per run** — the same question may produce
-> 2, 14, 17, 23 … Bing hits depending on what the tool decides.
+> 2, 14, 17, 23 … Bing hits depending on what the tool decides. The bench
+> still bills the WebSearchTool family per *outer* `web_search_call`, since
+> that's the quantity Microsoft charges the caller for (the inner fan-out
+> isn't separately metered to you).
 
 ### Inspecting the raw response
 
-To dump the raw SDK response (or `AgentResponse`) to disk for any run, set:
+To dump the raw SDK response (or `AgentResponse`) to disk for any run:
 
 ```powershell
 $env:WEBSEARCH_BENCH_DEBUG="1"     # writes ./debug/<backend>-<timestamp>.json
@@ -265,14 +263,15 @@ on the Foundry App Insights `execute_tool web.run` span — open a real dump and
 extend `count_bing_queries_in_openai_output` in `shared.py` with the field
 names you find.
 
-Default `tool_rate_per_1k` (verified mid-2025, override via env):
+### Default tool rate
 
-| Backend | Tool rate | Source |
-| --- | --- | --- |
-| `foundry-ws-bing`, `agentfx-bing`, `agentfx-bing-cached (miss)` | **$35 / 1,000 calls** | [Grounding with Bing](https://www.microsoft.com/bing/apis/grounding-pricing) |
-| `foundry-ws-bingcustom` | **$35 / 1,000 calls** (new SKU; legacy $14 retired Aug 2025) | [Grounding with Bing Custom](https://www.microsoft.com/bing/apis/grounding-pricing) |
-| `openai-ws` | **$10 / 1,000 calls** (all models) | [OpenAI pricing](https://openai.com/api/pricing/) |
-| `agentfx-bing-cached (hit)` | $0 — answer served from Redis, no Bing call | n/a |
+| Tool family | Backends | Quantity | Rate | Source |
+| --- | --- | --- | --- | --- |
+| `BingGroundingTool` | `foundry-bing-grounding` | `bing_queries` | **$35 / 1,000** | [Grounding with Bing](https://www.microsoft.com/bing/apis/grounding-pricing) |
+| `BingCustomSearchPreviewTool` | `foundry-bing-grounding-custom` | `bing_queries` | **$35 / 1,000** (new SKU; legacy $14 retired Aug 2025) | [Grounding with Bing Custom](https://www.microsoft.com/bing/apis/grounding-pricing) |
+| `WebSearchTool` (Bing Web Search) | `foundry-ws-bing`, `foundry-ws-bing-fast`, `agentfx-bing`, `agentfx-bing-cached (miss)` | `web_search_calls` | **$35 / 1,000** | [Grounding with Bing](https://www.microsoft.com/bing/apis/grounding-pricing) |
+| `WebSearchTool` (Bing Custom Search) | `foundry-ws-bingcustom` | `web_search_calls` | **$35 / 1,000** | [Grounding with Bing Custom](https://www.microsoft.com/bing/apis/grounding-pricing) |
+| Cache hit | `agentfx-bing-cached (hit)` | — | $0 — answer served from Redis | n/a |
 
 Default model token rates (Azure OpenAI Global Standard, USD per **1M** tokens —
 source: <https://azure.microsoft.com/pricing/details/azure-openai/>):
@@ -281,67 +280,36 @@ source: <https://azure.microsoft.com/pricing/details/azure-openai/>):
 | --- | ---:| ---:| ---:|
 | `gpt-5.1` | $1.25 | $0.125 | $10.00 |
 | `gpt-5.1-mini` | $0.25 | $0.025 | $2.00 |
+| `gpt-4.1` | $2.00 | $0.50 | $8.00 |
+| `gpt-4.1-mini` | $0.40 | $0.10 | $1.60 |
 | `gpt-4o` | $2.50 | $1.25 | $10.00 |
 | `gpt-4o-mini` | $0.15 | $0.075 | $0.60 |
 
-Set `MODEL` (Foundry / Agent Framework runs) and `OPENAI_MODEL` (OpenAI run)
-in `.env` — the harness picks the matching row automatically. Unknown models
+Set `MODEL` (every backend) and `MODEL_FAST` (`foundry-ws-bing-fast`) in
+`.env` — the harness picks the matching row automatically. Unknown models
 fall through with a model-token cost of $0 (only the per-call tool charge is
 billed), so add new models to `MODEL_PRICING_PER_1K` in `pricing.py` before
 quoting.
 
-## Change the workload
-
-Every backend reads its workload from `src/websearch_bench/shared.py`. Edit
-those module-level constants once and rerun `websearch-bench`:
-
-- `SHARED_QUERY` — the prompt every backend gets.
-- `SHARED_INSTRUCTIONS` — system instructions.
-- `MODEL` — model used by all Foundry / Agent Framework backends.
-- `USER_COUNTRY` / `USER_REGION` / `USER_CITY` — `user_location` hint.
-- `SEARCH_CONTEXT_SIZE` — `"low" | "medium" | "high"`. Honored by all
-  backends except `openai-ws` (the OpenAI Responses `web_search` `filters`
-  block doesn't expose it today).
-- `ALLOWED_DOMAINS` — set in `.env` (comma-separated; full URLs like
-  `https://www.sars.gov.za/` are accepted and normalized to hostnames).
-  Honored by `foundry-ws-bing`, `foundry-ws-bing-fast`, `agentfx-bing*`,
-  and `openai-ws`. For `foundry-ws-bingcustom` and
-  `foundry-bing-grounding-custom` you must set the allowed-domain list on
-  the Bing Custom Search instance itself in the
-  [Bing portal](https://www.customsearch.ai/) — the API does not accept a
-  `filters` block when a `custom_search_configuration` is set.
-
-## Pricing
-
-`src/websearch_bench/pricing.py` ships with **verified defaults** for mid-2025
-(see the table in [Metrics & cost model](#metrics--cost-model) above for sources).
-Verify against the official pages before quoting a customer:
-
-- Azure OpenAI / Foundry model pricing: <https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/>
-- Grounding with Bing Search / Custom Search: <https://www.microsoft.com/bing/apis/grounding-pricing>
-- OpenAI Responses API + `web_search`: <https://openai.com/api/pricing/>
-
-Override per-1,000-call rates via env vars (see `.env.example`).
-
 ### How tool cost is routed (and why it matters)
 
-Per Microsoft's [Web search with the Responses API docs](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/web-search):
+Per Microsoft's
+[Web search with the Responses API docs](https://learn.microsoft.com/azure/foundry/openai/how-to/web-search):
 
-> "Web Search uses Grounding with Bing Search and/or Grounding with Bing Custom Search […] Search actions incur tool call costs."
+> "Web Search uses Grounding with Bing Search and/or Grounding with Bing
+> Custom Search […] Search actions incur tool call costs."
 
-So **both** Foundry tool families bill at the Grounding-with-Bing rate
-($35 / 1,000) — but they bill from *different places* and against
-*different quantities*:
+So **all** Foundry grounding tools bill at the same Grounding-with-Bing rate
+— but they bill from *different places* and against *different quantities*:
 
 | Tool surface | Backends | Billed where | Quantity used | Rate |
 | --- | --- | --- | --- | --- |
-| `BingGroundingTool` / `BingCustomSearchPreviewTool` | `foundry-bing-grounding`, `foundry-bing-grounding-custom` | Your **own** `Microsoft.Bing/accounts` resource (its `TotalCalls` metric increments — verifiable via `bing_usage.py`) | `bing_queries` (each tool call = 1 Bing call) | $35/1K |
-| `WebSearchTool` (Foundry-hosted) | `foundry-ws-bing*`, `foundry-ws-bingcustom`, `agentfx-*` | Microsoft-managed Bing infra (charge appears on your **Foundry / Cognitive Services** account bill as a "Grounding with Bing Search" line item — `bing_usage.py` does **not** see it) | `web_search_calls` (the *outer* tool call; server-side fan-out isn't separately metered to the caller) | $35/1K |
-| `web_search` (OpenAI direct) | `openai-ws` | OpenAI Responses API `web_search` tool | `web_search_calls` | $10/1K |
+| `BingGroundingTool` / `BingCustomSearchPreviewTool` | `foundry-bing-grounding`, `foundry-bing-grounding-custom` | Your **own** `Microsoft.Bing/accounts` resource (its `TotalCalls` metric increments — verifiable via `bing_usage.py`) | `bing_queries` (1 tool call = 1 Bing call, no fan-out) | $35/1K |
+| `WebSearchTool` (Foundry-hosted) | `foundry-ws-bing*`, `foundry-ws-bingcustom`, `agentfx-bing*` | Microsoft-managed Bing infra (charge appears on your **Foundry / Cognitive Services** account bill as a "Grounding with Bing Search" line item — `bing_usage.py` does **not** see it; use `cost_lookup.py`) | `web_search_calls` (the *outer* tool call; server-side fan-out isn't separately metered to the caller) | $35/1K |
 
 The crucial nuance: Foundry's server-side `web.run` fan-out (which can turn
-one `web_search_call` into many Bing transactions in the App Insights span) is
-*not* separately billed to the caller — Microsoft charges per outer
+one `web_search_call` into many Bing transactions in the App Insights span)
+is *not* separately billed to the caller — Microsoft charges per outer
 `web_search_call` action. That's why `web_search_calls` is the right quantity
 for the WebSearchTool family, not `bing_queries`.
 
@@ -350,22 +318,24 @@ for the WebSearchTool family, not `bing_queries`.
 > explicitly state the per-call quantity (outer call vs internal fan-out).
 > The current `tool_cost` implementation assumes per *outer* call, which
 > aligns with how the OpenAI Responses `web_search_call` action is modelled
-> and is the only quantity exposed to the caller. If you receive a Foundry
-> invoice that shows otherwise, override
-> `BING_GROUNDING_USD_PER_1K` and re-evaluate.
+> and is the only quantity exposed to the caller. Use `cost_lookup.py` (see
+> below) to verify against an actual Cost Management line item, and override
+> `BING_GROUNDING_USD_PER_1K` if your invoice tells a different story.
 
-## Validating real Bing usage
+## Validating billing
 
 The in-process telemetry can't tell the whole story:
 
-- Foundry SDK backends emit a span per Bing call → `bing_q` is accurate.
-- agent_framework backends only emit a single outer `search_tool_calls`
-  count → Foundry's server-side fan-out is invisible to their tracer.
+- Legacy direct tools (`foundry-bing-grounding*`) bill against the user's
+  Bing resource → use **`bing_usage.py`**.
+- WebSearchTool (`foundry-ws-*`, `agentfx-*`) bills against the Foundry
+  account → use **`cost_lookup.py`**.
 
-For the **legacy direct tools** (`foundry-bing-grounding*`), the billing
-truth lives on the `Microsoft.Bing/accounts` resource as the `TotalCalls`
-platform metric. One Bing API call = one increment. That's what
-`bing_usage.py` queries:
+### `bing_usage.py` — for the legacy direct tools
+
+For the legacy direct tools, the billing truth lives on the
+`Microsoft.Bing/accounts` resource as the `TotalCalls` platform metric. One
+Bing API call = one increment. That's what `bing_usage.py` queries:
 
 ```powershell
 # Last 30 minutes (default)
@@ -376,28 +346,21 @@ uv run python -m websearch_bench.bing_usage --since 10m
 uv run python -m websearch_bench.bing_usage --since 2h
 
 # Explicit ISO-8601 window
-uv run python -m websearch_bench.bing_usage \
+uv run python -m websearch_bench.bing_usage `
   --start 2026-05-24T09:00:00Z --end 2026-05-24T09:15:00Z
 ```
 
 > ⚠️ **`bing_usage.py` does NOT capture WebSearchTool charges.**
 > WebSearchTool / Responses `web_search` routes through Microsoft-managed
 > Bing infrastructure, not the user's `Microsoft.Bing/accounts` resource,
-> so its `TotalCalls` metric won't move. To audit WebSearchTool spend, use
-> `cost_lookup.py` (see below) — or open Azure Cost Analysis on your
-> **Foundry / Cognitive Services account** manually and filter the meter
-> to "Grounding with Bing Search" (or "Grounding with Bing Custom
-> Search"). The harness's reported `cost` for those backends is the best
-> client-side estimate available.
+> so its `TotalCalls` metric won't move. Use `cost_lookup.py` for that.
 
-### Validating WebSearchTool billing (`cost_lookup.py`)
+### `cost_lookup.py` — for WebSearchTool
 
-`bing_usage.py` cannot see WebSearchTool charges because they route
-through Microsoft-managed Bing infrastructure and bill on the **Foundry
-account** itself. `cost_lookup.py` queries Azure Cost Management
-(`Microsoft.Consumption/usageDetails`) for that account over a chosen
-time window, so you can answer the key billing question for
-`foundry-ws-*` and `agentfx-*`:
+`cost_lookup.py` queries Azure Cost Management
+(`Microsoft.Consumption/usageDetails`) for the Foundry account over a chosen
+time window, so you can answer the key billing question for the
+WebSearchTool family:
 
 > For N runs of `foundry-ws-bing`, does Cost Management record N units
 > (per outer `web_search_call`) or N × fan-out units (per inner Bing
@@ -417,36 +380,50 @@ uv run python -m websearch_bench.cost_lookup --since 48h `
   --resource-group rg-foundry-prod
 ```
 
-Required: `AZURE_SUBSCRIPTION_ID` env var (or `--subscription`), `az
-login`, and **Cost Management Reader** on the subscription / RG.
+Required: `AZURE_SUBSCRIPTION_ID` env var (or `--subscription`), `az login`,
+and **Cost Management Reader** on the subscription / RG.
 
-> ⏳ **24–48h ingestion lag.** Same-day queries typically return empty
-> — that's expected. Run the bench today, query tomorrow.
+> ⏳ **24–48h ingestion lag.** Same-day queries typically return empty —
+> that's expected. Run the bench today, query tomorrow.
 
 When `--runs N` is set, the script prints the **qty/run ratio**:
-* ≈ **1.0** → billing is per outer `web_search_call`.
-* ≈ your harness's `bing_q` → billing is per inner Bing transaction.
 
-Required env vars:
+- ≈ **1.0** → billing is per outer `web_search_call` (current bench assumption).
+- ≈ your harness's `bing_q` → billing is per inner Bing transaction.
 
-```dotenv
-AZURE_SUBSCRIPTION_ID=<sub id>
-# Optional — if unset, the script auto-discovers Microsoft.Bing/accounts via `az`
-BING_GROUNDING_RESOURCE_ID=/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Bing/accounts/<name>
-BING_CUSTOM_RESOURCE_ID=/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Bing/accounts/<name>
-```
-
-Recommended workflow when comparing backends:
+### End-to-end workflow when comparing backends
 
 1. Note the current time.
-2. Run `uv run python -m websearch_bench.compare`.
+2. Run `uv run websearch-bench`.
 3. Wait ~3 minutes (Azure Monitor metric ingestion lag).
 4. Run `uv run python -m websearch_bench.bing_usage --since 5m`.
 5. `TotalCalls` should equal the sum of `bing_queries` from your
-   `foundry-bing-grounding*` rows only. WebSearchTool rows contribute
+   `foundry-bing-grounding*` rows **only**. WebSearchTool rows contribute
    zero to this metric — that's expected, not a bug.
+6. Wait 24-48h, then run `uv run python -m websearch_bench.cost_lookup
+   --start <step-1-time> --end <now> --runs <N>` to verify WebSearchTool
+   billing against the Foundry account.
 
-### Cache-only backend: extras
+## Change the workload
+
+Every backend reads its workload from `src/websearch_bench/shared.py`. Edit
+those module-level constants once and rerun `websearch-bench`:
+
+- `SHARED_QUERY` — the prompt every backend gets.
+- `SHARED_INSTRUCTIONS` — system instructions.
+- `MODEL` — model used by all backends (override via env var).
+- `MODEL_FAST` — non-reasoning model used by `foundry-ws-bing-fast`.
+- `USER_COUNTRY` / `USER_REGION` / `USER_CITY` — `user_location` hint.
+- `SEARCH_CONTEXT_SIZE` — `"low" | "medium" | "high"`.
+- `ALLOWED_DOMAINS` — set in `.env` (comma-separated; full URLs like
+  `https://www.sars.gov.za/` are accepted and normalized to hostnames).
+  Honored by `foundry-ws-bing`, `foundry-ws-bing-fast`, and `agentfx-bing*`.
+  For `foundry-ws-bingcustom` and `foundry-bing-grounding-custom` you must
+  set the allowed-domain list on the Bing Custom Search instance itself in
+  the [Bing portal](https://www.customsearch.ai/) — the API does not accept
+  a `filters` block when a `custom_search_configuration` is set.
+
+## Cache-only backend: extras
 
 ```powershell
 # Ask a different question (cache key is per-query)
@@ -480,8 +457,6 @@ docker run --rm -p 6379:6379 redis:7
 - **Bing Custom Search returns empty results** — verify
   `BING_CUSTOM_SEARCH_INSTANCE_NAME` matches an instance in the Bing Custom
   Search portal and that the instance includes the expected domains.
-- **`web_search` errors from OpenAI** — your account must have access to the
-  Responses API web-search tool and a model that supports it.
 - **`agent_framework` import errors after `uv sync`** — this repo opts in to
   pre-release packages via `[tool.uv] prerelease = "allow"`; re-run `uv sync`.
 
