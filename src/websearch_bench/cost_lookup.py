@@ -58,7 +58,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -123,6 +125,31 @@ class UsageRow:
     currency: str
 
 
+def _resolve_az() -> str | None:
+    """Locate the Azure CLI entry-point.
+
+    ``subprocess`` on Windows does *not* honour ``PATHEXT``, so a bare
+    ``["az", ...]`` fails with ``FileNotFoundError`` even when ``az.cmd``
+    is on PATH and resolvable from PowerShell. We try ``shutil.which``
+    (which *does* honour ``PATHEXT``) for each known launcher name, then
+    fall back to common Windows install locations. Returns ``None`` if
+    nothing was found.
+    """
+    for name in ("az", "az.cmd", "az.exe"):
+        path = shutil.which(name)
+        if path:
+            return path
+    if os.name == "nt":
+        candidates = (
+            r"C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
+            r"C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
+        )
+        for cand in candidates:
+            if os.path.isfile(cand):
+                return cand
+    return None
+
+
 def _run_az_consumption(
     *,
     subscription_id: str,
@@ -131,8 +158,19 @@ def _run_az_consumption(
     resource_group: str | None,
 ) -> list[UsageRow]:
     """Shell out to ``az consumption usage list`` and parse the result."""
+    az = _resolve_az()
+    if az is None:
+        console.print(
+            "[red]Azure CLI ('az') not found.[/red] Tried PATH (via shutil.which) "
+            "and common Windows install locations under "
+            "'C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin'. "
+            "Install from https://aka.ms/installazurecliwindows or activate "
+            "a shell where 'az' is on PATH."
+        )
+        return []
+
     cmd = [
-        "az",
+        az,
         "consumption",
         "usage",
         "list",
@@ -151,7 +189,7 @@ def _run_az_consumption(
     try:
         out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
     except FileNotFoundError:
-        console.print("[red]Azure CLI ('az') not found on PATH.[/red]")
+        console.print(f"[red]Azure CLI launcher not executable: {az}[/red]")
         return []
     except subprocess.CalledProcessError as exc:
         console.print(f"[red]az consumption usage list failed:\n{exc.output.strip()}[/red]")
